@@ -4,6 +4,7 @@
 //! structure's APIs are `unsafe` as they require the caller to ensure the
 //! specified node is actually contained by the list.
 
+use core::fmt;
 use core::mem::ManuallyDrop;
 use core::ptr::NonNull;
 
@@ -11,7 +12,6 @@ use core::ptr::NonNull;
 ///
 /// Currently, the list is not emptied on drop. It is the caller's
 /// responsibility to ensure the list is empty before dropping it.
-#[derive(Debug)]
 pub(crate) struct LinkedList<T: Link> {
     /// Linked list head
     head: Option<NonNull<T::Target>>,
@@ -53,7 +53,6 @@ pub(crate) unsafe trait Link {
 }
 
 /// Previous / next pointers
-#[derive(Debug)]
 pub(crate) struct Pointers<T> {
     /// The previous node in the list. null if there is no previous node.
     prev: Option<NonNull<T>>,
@@ -81,7 +80,7 @@ impl<T: Link> LinkedList<T> {
         // The value should not be dropped, it is being inserted into the list
         let val = ManuallyDrop::new(val);
         let ptr = T::as_raw(&*val);
-
+        assert_ne!(self.head, Some(ptr));
         unsafe {
             T::pointers(ptr).as_mut().next = self.head;
             T::pointers(ptr).as_mut().prev = None;
@@ -165,21 +164,39 @@ impl<T: Link> LinkedList<T> {
     }
 }
 
+impl<T: Link> fmt::Debug for LinkedList<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("LinkedList")
+            .field("head", &self.head)
+            .field("tail", &self.tail)
+            .finish()
+    }
+}
+
+cfg_sync! {
+    impl<T: Link> LinkedList<T> {
+        pub(crate) fn last(&self) -> Option<&T::Target> {
+            let tail = self.tail.as_ref()?;
+            unsafe {
+                Some(&*tail.as_ptr())
+            }
+        }
+    }
+}
+
 // ===== impl Iter =====
 
 cfg_rt_threaded! {
-    use core::marker::PhantomData;
-
     pub(crate) struct Iter<'a, T: Link> {
         curr: Option<NonNull<T::Target>>,
-        _p: PhantomData<&'a T>,
+        _p: core::marker::PhantomData<&'a T>,
     }
 
     impl<T: Link> LinkedList<T> {
         pub(crate) fn iter(&self) -> Iter<'_, T> {
             Iter {
                 curr: self.head,
-                _p: PhantomData,
+                _p: core::marker::PhantomData,
             }
         }
     }
@@ -210,6 +227,15 @@ impl<T> Pointers<T> {
     }
 }
 
+impl<T> fmt::Debug for Pointers<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Pointers")
+            .field("prev", &self.prev)
+            .field("next", &self.next)
+            .finish()
+    }
+}
+
 #[cfg(test)]
 #[cfg(not(loom))]
 mod tests {
@@ -217,6 +243,7 @@ mod tests {
 
     use std::pin::Pin;
 
+    #[derive(Debug)]
     struct Entry {
         pointers: Pointers<Entry>,
         val: i32,

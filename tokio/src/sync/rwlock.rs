@@ -1,8 +1,7 @@
-use crate::future::poll_fn;
-use crate::sync::semaphore_ll::{AcquireError, Permit, Semaphore};
+use crate::coop::CoopFutureExt;
+use crate::sync::batch_semaphore::{AcquireError, Semaphore};
 use std::cell::UnsafeCell;
 use std::ops;
-use std::task::{Context, Poll};
 
 #[cfg(not(loom))]
 const MAX_READS: usize = 32;
@@ -109,27 +108,47 @@ pub struct RwLockWriteGuard<'a, T> {
 #[derive(Debug)]
 struct ReleasingPermit<'a, T> {
     num_permits: u16,
-    permit: Permit,
     lock: &'a RwLock<T>,
 }
 
 impl<'a, T> ReleasingPermit<'a, T> {
-    fn poll_acquire(
-        &mut self,
-        cx: &mut Context<'_>,
-        s: &Semaphore,
-    ) -> Poll<Result<(), AcquireError>> {
-        // Keep track of task budget
-        ready!(crate::coop::poll_proceed(cx));
-
-        self.permit.poll_acquire(cx, self.num_permits, s)
+    async fn acquire(
+        lock: &'a RwLock<T>,
+        num_permits: u16,
+    ) -> Result<ReleasingPermit<'a, T>, AcquireError> {
+        lock.s.acquire(num_permits).cooperate().await?;
+        Ok(Self { num_permits, lock })
     }
 }
 
 impl<'a, T> Drop for ReleasingPermit<'a, T> {
     fn drop(&mut self) {
-        self.permit.release(self.num_permits, &self.lock.s);
+        self.lock.s.release(self.num_permits as usize);
     }
+}
+
+#[test]
+#[cfg(not(loom))]
+fn bounds() {
+    fn check_send<T: Send>() {}
+    fn check_sync<T: Sync>() {}
+    fn check_unpin<T: Unpin>() {}
+    // This has to take a value, since the async fn's return type is unnameable.
+    fn check_send_sync_val<T: Send + Sync>(_t: T) {}
+
+    check_send::<RwLock<u32>>();
+    check_sync::<RwLock<u32>>();
+    check_unpin::<RwLock<u32>>();
+
+    check_sync::<RwLockReadGuard<'_, u32>>();
+    check_unpin::<RwLockReadGuard<'_, u32>>();
+
+    check_sync::<RwLockWriteGuard<'_, u32>>();
+    check_unpin::<RwLockWriteGuard<'_, u32>>();
+
+    let rwlock = RwLock::new(0);
+    check_send_sync_val(rwlock.read());
+    check_send_sync_val(rwlock.write());
 }
 
 // As long as T: Send + Sync, it's fine to send and share RwLock<T> between threads.
@@ -189,19 +208,11 @@ impl<T> RwLock<T> {
     ///}
     /// ```
     pub async fn read(&self) -> RwLockReadGuard<'_, T> {
-        let mut permit = ReleasingPermit {
-            num_permits: 1,
-            permit: Permit::new(),
-            lock: self,
-        };
-
-        poll_fn(|cx| permit.poll_acquire(cx, &self.s))
-            .await
-            .unwrap_or_else(|_| {
-                // The semaphore was closed. but, we never explicitly close it, and we have a
-                // handle to it through the Arc, which means that this can never happen.
-                unreachable!()
-            });
+        let permit = ReleasingPermit::acquire(self, 1).await.unwrap_or_else(|_| {
+            // The semaphore was closed. but, we never explicitly close it, and we have a
+            // handle to it through the Arc, which means that this can never happen.
+            unreachable!()
+        });
         RwLockReadGuard { lock: self, permit }
     }
 
@@ -228,13 +239,7 @@ impl<T> RwLock<T> {
     ///}
     /// ```
     pub async fn write(&self) -> RwLockWriteGuard<'_, T> {
-        let mut permit = ReleasingPermit {
-            num_permits: MAX_READS as u16,
-            permit: Permit::new(),
-            lock: self,
-        };
-
-        poll_fn(|cx| permit.poll_acquire(cx, &self.s))
+        let permit = ReleasingPermit::acquire(self, MAX_READS as u16)
             .await
             .unwrap_or_else(|_| {
                 // The semaphore was closed. but, we never explicitly close it, and we have a
