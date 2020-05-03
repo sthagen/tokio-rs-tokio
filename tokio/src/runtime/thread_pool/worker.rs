@@ -172,26 +172,66 @@ pub(super) fn create(size: usize, park: Parker) -> (Arc<Shared>, Launch) {
 }
 
 cfg_blocking! {
+    use crate::runtime::enter::EnterContext;
+
     pub(crate) fn block_in_place<F, R>(f: F) -> R
     where
         F: FnOnce() -> R,
     {
         // Try to steal the worker core back
-        struct Reset;
+        struct Reset(bool);
 
         impl Drop for Reset {
             fn drop(&mut self) {
                 CURRENT.with(|maybe_cx| {
+                    if !self.0 {
+                        // We were not the ones to give away the core,
+                        // so we do not get to restore it either.
+                        // This is necessary so that with a nested
+                        // block_in_place, the inner block_in_place
+                        // does not restore the core.
+                        return;
+                    }
+
                     if let Some(cx) = maybe_cx {
                         let core = cx.worker.core.take();
-                        *cx.core.borrow_mut() = core;
+                        let mut cx_core = cx.core.borrow_mut();
+                        assert!(cx_core.is_none());
+                        *cx_core = core;
                     }
                 });
             }
         }
 
+        let mut had_core = false;
         CURRENT.with(|maybe_cx| {
-            let cx = maybe_cx.expect("can call blocking only when running in a spawned task");
+            match (crate::runtime::enter::context(),  maybe_cx.is_some()) {
+                (EnterContext::Entered { .. }, true) => {
+                    // We are on a thread pool runtime thread, so we just need to set up blocking.
+                }
+                (EnterContext::Entered { allow_blocking }, false) => {
+                    // We are on an executor, but _not_ on the thread pool.
+                    // That is _only_ okay if we are in a thread pool runtime's block_on method:
+                    if allow_blocking {
+                        return;
+                    } else {
+                        // This probably means we are on the basic_scheduler or in a LocalSet,
+                        // where it is _not_ okay to block.
+                        panic!("can call blocking only when running on the multi-threaded runtime");
+                    }
+                }
+                (EnterContext::NotEntered, true) => {
+                    // This is a nested call to block_in_place (we already exited).
+                    // All the necessary setup has already been done.
+                    return;
+                }
+                (EnterContext::NotEntered, false) => {
+                    // We are outside of the tokio runtime, so blocking is fine.
+                    // We can also skip all of the thread pool blocking setup steps.
+                    return;
+                }
+            }
+            let cx = maybe_cx.expect("no .is_some() == false cases above should lead here");
 
             // Get the worker core. If none is set, then blocking is fine!
             let core = match cx.core.borrow_mut().take() {
@@ -212,6 +252,7 @@ cfg_blocking! {
             //
             // First, move the core back into the worker's shared core slot.
             cx.worker.core.set(core);
+            had_core = true;
 
             // Next, clone the worker handle and send it to a new thread for
             // processing.
@@ -222,9 +263,13 @@ cfg_blocking! {
             runtime::spawn_blocking(move || run(worker));
         });
 
-        let _reset = Reset;
+        let _reset = Reset(had_core);
 
-        f()
+        if had_core {
+            crate::runtime::enter::exit(f)
+        } else {
+            f()
+        }
     }
 }
 
@@ -256,7 +301,7 @@ fn run(worker: Arc<Worker>) {
         core: RefCell::new(None),
     };
 
-    let _enter = crate::runtime::enter();
+    let _enter = crate::runtime::enter(true);
 
     CURRENT.set(&cx, || {
         // This should always be an error. It only returns a `Result` to support

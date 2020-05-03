@@ -116,6 +116,22 @@ impl<T: Stream> Spawn<T> {
     }
 }
 
+impl<T: Future> Future for Spawn<T> {
+    type Output = T::Output;
+
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        self.future.as_mut().poll(cx)
+    }
+}
+
+impl<T: Stream> Stream for Spawn<T> {
+    type Item = T::Item;
+
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        self.future.as_mut().poll_next(cx)
+    }
+}
+
 impl MockTask {
     /// Creates new mock task
     fn new() -> Self {

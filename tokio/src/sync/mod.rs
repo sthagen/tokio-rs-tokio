@@ -126,7 +126,7 @@
 //! pressure.
 //!
 //! A common concurrency pattern for resource management is to spawn a task
-//! dedicated to managing that resource and using message passing betwen other
+//! dedicated to managing that resource and using message passing between other
 //! tasks to interact with the resource. The resource may be anything that may
 //! not be concurrently used. Some examples include a socket and program state.
 //! For example, if multiple tasks need to send data over a single socket, spawn
@@ -425,10 +425,15 @@ cfg_sync! {
 
     pub mod broadcast;
 
+    #[cfg(tokio_unstable)]
+    mod cancellation_token;
+    #[cfg(tokio_unstable)]
+    pub use cancellation_token::{CancellationToken, WaitForCancellationFuture};
+
     pub mod mpsc;
 
     mod mutex;
-    pub use mutex::{Mutex, MutexGuard};
+    pub use mutex::{Mutex, MutexGuard, TryLockError, OwnedMutexGuard};
 
     mod notify;
     pub use notify::Notify;
@@ -438,7 +443,7 @@ cfg_sync! {
     pub(crate) mod batch_semaphore;
     pub(crate) mod semaphore_ll;
     mod semaphore;
-    pub use semaphore::{Semaphore, SemaphorePermit};
+    pub use semaphore::{Semaphore, SemaphorePermit, OwnedSemaphorePermit};
 
     mod rwlock;
     pub use rwlock::{RwLock, RwLockReadGuard, RwLockWriteGuard};

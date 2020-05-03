@@ -36,7 +36,7 @@ pub(crate) struct ThreadPool {
 ///
 /// `Spawner` instances are obtained by calling [`ThreadPool::spawner`].
 ///
-/// [`ThreadPool::spawner`]: struct.ThreadPool.html#method.spawner
+/// [`ThreadPool::spawner`]: method@ThreadPool::spawner
 #[derive(Clone)]
 pub(crate) struct Spawner {
     shared: Arc<worker::Shared>,
@@ -78,7 +78,7 @@ impl ThreadPool {
     where
         F: Future,
     {
-        let mut enter = crate::runtime::enter();
+        let mut enter = crate::runtime::enter(true);
         enter.block_on(future).expect("failed to park thread")
     }
 }
