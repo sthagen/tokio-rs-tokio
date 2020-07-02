@@ -132,8 +132,14 @@ RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --all-features
 ```
 The `cargo fmt` command does not work on the Tokio codebase. You can use the
 command below instead:
+
+#### Bash
 ```
 rustfmt --check --edition 2018 $(find . -name '*.rs' -print)
+```
+#### Powershell
+```
+Get-ChildItem . -Filter "*.rs" -Recurse | foreach { rustfmt --check --edition 2018 $_.FullName }
 ```
 The `--check` argument prints the things that need to be fixed. If you remove
 it, `rustfmt` will update your files locally instead.
@@ -250,7 +256,7 @@ That said, if you have a number of commits that are "checkpoints" and don't
 represent a single logical change, please squash those together.
 
 Note that multiple commits often get squashed when they are landed (see the
-notes about [commit squashing]).
+notes about [commit squashing](#commit-squashing)).
 
 #### Commit message guidelines
 
@@ -321,7 +327,7 @@ in order to evaluate whether the changes are correct and necessary.
 Keep an eye out for comments from code owners to provide guidance on conflicting
 feedback.
 
-**Once the PR is open, do not rebase the commits**. See [Commit Squashing] for
+**Once the PR is open, do not rebase the commits**. See [Commit Squashing](#commit-squashing) for
 more details.
 
 ### Commit Squashing

@@ -32,7 +32,7 @@
 //! single producer to a single consumer. This channel is usually used to send
 //! the result of a computation to a waiter.
 //!
-//! **Example:** using a `oneshot` channel to receive the result of a
+//! **Example:** using a [`oneshot` channel][oneshot] to receive the result of a
 //! computation.
 //!
 //! ```
@@ -58,11 +58,12 @@
 //! }
 //! ```
 //!
-//! Note, if the task produces the the computation result as its final action
-//! before terminating, the [`JoinHandle`] can be used to receive the
-//! computation result instead of allocating resources for the `oneshot`
-//! channel. Awaiting on [`JoinHandle`] returns `Result`. If the task panics,
-//! the `Joinhandle` yields `Err` with the panic cause.
+//! Note, if the task produces a computation result as its final
+//! action before terminating, the [`JoinHandle`] can be used to
+//! receive that value instead of allocating resources for the
+//! `oneshot` channel. Awaiting on [`JoinHandle`] returns `Result`. If
+//! the task panics, the `Joinhandle` yields `Err` with the panic
+//! cause.
 //!
 //! **Example:**
 //!
@@ -84,6 +85,7 @@
 //! }
 //! ```
 //!
+//! [oneshot]: oneshot
 //! [`JoinHandle`]: crate::task::JoinHandle
 //!
 //! ## `mpsc` channel
@@ -230,9 +232,11 @@
 //! }
 //! ```
 //!
+//! [mpsc]: mpsc
+//!
 //! ## `broadcast` channel
 //!
-//! The [`broadcast` channel][broadcast] supports sending **many** values from
+//! The [`broadcast` channel] supports sending **many** values from
 //! **many** producers to **many** consumers. Each consumer will receive
 //! **each** value. This channel can be used to implement "fan out" style
 //! patterns common with pub / sub or "chat" systems.
@@ -265,12 +269,14 @@
 //! }
 //! ```
 //!
+//! [`broadcast` channel]: crate::sync::broadcast
+//!
 //! ## `watch` channel
 //!
-//! The [`watch` channel][watch] supports sending **many** values from a
-//! **single** producer to **many** consumers. However, only the **most recent**
-//! value is stored in the channel. Consumers are notified when a new value is
-//! sent, but there is no guarantee that consumers will see **all** values.
+//! The [`watch` channel] supports sending **many** values from a **single**
+//! producer to **many** consumers. However, only the **most recent** value is
+//! stored in the channel. Consumers are notified when a new value is sent, but
+//! there is no guarantee that consumers will see **all** values.
 //!
 //! The [`watch` channel] is similar to a [`broadcast` channel] with capacity 1.
 //!
@@ -278,9 +284,9 @@
 //! changes or signalling program state changes, such as transitioning to
 //! shutdown.
 //!
-//! **Example:** use a `watch` channel to notify tasks of configuration changes.
-//! In this example, a configuration file is checked periodically. When the file
-//! changes, the configuration changes are signalled to consumers.
+//! **Example:** use a [`watch` channel] to notify tasks of configuration
+//! changes. In this example, a configuration file is checked periodically. When
+//! the file changes, the configuration changes are signalled to consumers.
 //!
 //! ```
 //! use tokio::sync::watch;
@@ -393,6 +399,9 @@
 //! }
 //! ```
 //!
+//! [`watch` channel]: crate::sync::watch
+//! [`broadcast` channel]: crate::sync::broadcast
+//!
 //! # State synchronization
 //!
 //! The remaining synchronization primitives focus on synchronizing state.
@@ -400,23 +409,23 @@
 //! operate in a similar way as their `std` counterparts parts but will wait
 //! asynchronously instead of blocking the thread.
 //!
-//! * [`Barrier`][Barrier] Ensures multiple tasks will wait for each other to
+//! * [`Barrier`](Barrier) Ensures multiple tasks will wait for each other to
 //!   reach a point in the program, before continuing execution all together.
 //!
-//! * [`Mutex`][Mutex] Mutual Exclusion mechanism, which ensures that at most
+//! * [`Mutex`](Mutex) Mutual Exclusion mechanism, which ensures that at most
 //!   one thread at a time is able to access some data.
 //!
-//! * [`Notify`][Notify] Basic task notification. `Notify` supports notifying a
+//! * [`Notify`](Notify) Basic task notification. `Notify` supports notifying a
 //!   receiving task without sending data. In this case, the task wakes up and
 //!   resumes processing.
 //!
-//! * [`RwLock`][RwLock] Provides a mutual exclusion mechanism which allows
+//! * [`RwLock`](RwLock) Provides a mutual exclusion mechanism which allows
 //!   multiple readers at the same time, while allowing only one writer at a
 //!   time. In some cases, this can be more efficient than a mutex.
 //!
-//! * [`Semaphore`][Semaphore] Limits the amount of concurrency. A semaphore
+//! * [`Semaphore`](Semaphore) Limits the amount of concurrency. A semaphore
 //!   holds a number of permits, which tasks may request in order to enter a
-//!   critical section. Semaphores are useful for implementing limiting of
+//!   critical section. Semaphores are useful for implementing limiting or
 //!   bounding of any kind.
 
 cfg_sync! {
@@ -425,10 +434,10 @@ cfg_sync! {
 
     pub mod broadcast;
 
-    #[cfg(tokio_unstable)]
-    mod cancellation_token;
-    #[cfg(tokio_unstable)]
-    pub use cancellation_token::{CancellationToken, WaitForCancellationFuture};
+    cfg_unstable! {
+        mod cancellation_token;
+        pub use cancellation_token::{CancellationToken, WaitForCancellationFuture};
+    }
 
     pub mod mpsc;
 

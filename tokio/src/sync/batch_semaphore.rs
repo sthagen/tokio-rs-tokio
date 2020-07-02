@@ -123,7 +123,9 @@ impl Semaphore {
         self.permits.load(Acquire) >> Self::PERMIT_SHIFT
     }
 
-    /// Adds `n` new permits to the semaphore.
+    /// Adds `added` new permits to the semaphore.
+    ///
+    /// The maximum number of permits is `usize::MAX >> 3`, and this function will panic if the limit is exceeded.
     pub(crate) fn release(&self, added: usize) {
         if added == 0 {
             return;
@@ -186,7 +188,7 @@ impl Semaphore {
 
     /// Release `rem` permits to the semaphore's wait list, starting from the
     /// end of the queue.
-    ///  
+    ///
     /// If `rem` exceeds the number of permits needed by the wait list, the
     /// remainder are assigned back to the semaphore.
     fn add_permits_locked(&self, mut rem: usize, waiters: MutexGuard<'_, Waitlist>) {
@@ -386,13 +388,18 @@ impl Future for Acquire<'_> {
     type Output = Result<(), AcquireError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        // First, ensure the current task has enough budget to proceed.
+        let coop = ready!(crate::coop::poll_proceed(cx));
+
         let (node, semaphore, needed, queued) = self.project();
+
         match semaphore.poll_acquire(cx, needed, node, *queued) {
             Pending => {
                 *queued = true;
                 Pending
             }
             Ready(r) => {
+                coop.made_progress();
                 r?;
                 *queued = false;
                 Ready(Ok(()))
@@ -512,8 +519,8 @@ impl TryAcquireError {
 impl fmt::Display for TryAcquireError {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            TryAcquireError::Closed => write!(fmt, "{}", "semaphore closed"),
-            TryAcquireError::NoPermits => write!(fmt, "{}", "no permits available"),
+            TryAcquireError::Closed => write!(fmt, "semaphore closed"),
+            TryAcquireError::NoPermits => write!(fmt, "no permits available"),
         }
     }
 }

@@ -353,3 +353,33 @@ macro_rules! cfg_uds {
         )*
     }
 }
+
+macro_rules! cfg_unstable {
+    ($($item:item)*) => {
+        $(
+            #[cfg(tokio_unstable)]
+            #[cfg_attr(docsrs, doc(cfg(tokio_unstable)))]
+            $item
+        )*
+    }
+}
+
+macro_rules! cfg_coop {
+    ($($item:item)*) => {
+        $(
+            #[cfg(any(
+                    feature = "blocking",
+                    feature = "dns",
+                    feature = "fs",
+                    feature = "io-driver",
+                    feature = "io-std",
+                    feature = "process",
+                    feature = "rt-core",
+                    feature = "sync",
+                    feature = "stream",
+                    feature = "time"
+                    ))]
+            $item
+        )*
+    }
+}
