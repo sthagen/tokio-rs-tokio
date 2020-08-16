@@ -9,17 +9,35 @@ use std::sync::Arc;
 /// An asynchronous `Mutex`-like type.
 ///
 /// This type acts similarly to an asynchronous [`std::sync::Mutex`], with one
-/// major difference: [`lock`] does not block. Another difference is that the
-/// lock guard can be held across await points.
+/// major difference: [`lock`] does not block and the lock guard can be held
+/// across await points.
 ///
-/// There are some situations where you should prefer the mutex from the
-/// standard library. Generally this is the case if:
+/// # Which kind of mutex should you use?
 ///
-///  1. The lock does not need to be held across await points.
-///  2. The duration of any single lock is near-instant.
+/// Contrary to popular belief, it is ok and often preferred to use the ordinary
+/// [`Mutex`][std] from the standard library in asynchronous code. This section
+/// will help you decide on which kind of mutex you should use.
 ///
-/// On the other hand, the Tokio mutex is for the situation where the lock
-/// needs to be held for longer periods of time, or across await points.
+/// The primary use case of the async mutex is to provide shared mutable access
+/// to IO resources such as a database connection. If the data stored behind the
+/// mutex is just data, it is often better to use a blocking mutex such as the
+/// one in the standard library or [`parking_lot`]. This is because the feature
+/// that the async mutex offers over the blocking mutex is that it is possible
+/// to keep the mutex locked across an `.await` point, which is rarely necessary
+/// for data.
+///
+/// A common pattern is to wrap the `Arc<Mutex<...>>` in a struct that provides
+/// non-async methods for performing operations on the data within, and only
+/// lock the mutex inside these methods. The [mini-redis] example provides an
+/// illustration of this pattern.
+///
+/// Additionally, when you _do_ want shared access to an IO resource, it is
+/// often better to spawn a task to manage the IO resource, and to use message
+/// passing to communicate with that task.
+///
+/// [std]: std::sync::Mutex
+/// [`parking_lot`]: https://docs.rs/parking_lot
+/// [mini-redis]: https://github.com/tokio-rs/mini-redis/blob/master/src/db.rs
 ///
 /// # Examples:
 ///
@@ -97,7 +115,6 @@ use std::sync::Arc;
 /// [`std::sync::Mutex`]: struct@std::sync::Mutex
 /// [`Send`]: trait@std::marker::Send
 /// [`lock`]: method@Mutex::lock
-#[derive(Debug)]
 pub struct Mutex<T: ?Sized> {
     s: semaphore::Semaphore,
     c: UnsafeCell<T>,
@@ -352,6 +369,20 @@ where
 {
     fn default() -> Self {
         Self::new(T::default())
+    }
+}
+
+impl<T> std::fmt::Debug for Mutex<T>
+where
+    T: std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut d = f.debug_struct("Mutex");
+        match self.try_lock() {
+            Ok(inner) => d.field("data", &*inner),
+            Err(_) => d.field("data", &format_args!("<locked>")),
+        };
+        d.finish()
     }
 }
 

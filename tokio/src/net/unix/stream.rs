@@ -1,12 +1,12 @@
 use crate::future::poll_fn;
-use crate::io::{AsyncRead, AsyncWrite, PollEvented};
+use crate::io::{AsyncRead, AsyncWrite, PollEvented, ReadBuf};
 use crate::net::unix::split::{split, ReadHalf, WriteHalf};
+use crate::net::unix::split_owned::{split_owned, OwnedReadHalf, OwnedWriteHalf};
 use crate::net::unix::ucred::{self, UCred};
 
 use std::convert::TryFrom;
 use std::fmt;
 use std::io::{self, Read, Write};
-use std::mem::MaybeUninit;
 use std::net::Shutdown;
 use std::os::unix::io::{AsRawFd, RawFd};
 use std::os::unix::net::{self, SocketAddr};
@@ -109,10 +109,33 @@ impl UnixStream {
         self.io.get_ref().shutdown(how)
     }
 
+    // These lifetime markers also appear in the generated documentation, and make
+    // it more clear that this is a *borrowed* split.
+    #[allow(clippy::needless_lifetimes)]
     /// Split a `UnixStream` into a read half and a write half, which can be used
     /// to read and write the stream concurrently.
-    pub fn split(&mut self) -> (ReadHalf<'_>, WriteHalf<'_>) {
+    ///
+    /// This method is more efficient than [`into_split`], but the halves cannot be
+    /// moved into independently spawned tasks.
+    ///
+    /// [`into_split`]: Self::into_split()
+    pub fn split<'a>(&'a mut self) -> (ReadHalf<'a>, WriteHalf<'a>) {
         split(self)
+    }
+
+    /// Splits a `UnixStream` into a read half and a write half, which can be used
+    /// to read and write the stream concurrently.
+    ///
+    /// Unlike [`split`], the owned halves can be moved to separate tasks, however
+    /// this comes at the cost of a heap allocation.
+    ///
+    /// **Note:** Dropping the write half will shut down the write half of the
+    /// stream. This is equivalent to calling [`shutdown(Write)`] on the `UnixStream`.
+    ///
+    /// [`split`]: Self::split()
+    /// [`shutdown(Write)`]: fn@Self::shutdown
+    pub fn into_split(self) -> (OwnedReadHalf, OwnedWriteHalf) {
+        split_owned(self)
     }
 }
 
@@ -143,15 +166,11 @@ impl TryFrom<net::UnixStream> for UnixStream {
 }
 
 impl AsyncRead for UnixStream {
-    unsafe fn prepare_uninitialized_buffer(&self, _: &mut [MaybeUninit<u8>]) -> bool {
-        false
-    }
-
     fn poll_read(
         self: Pin<&mut Self>,
         cx: &mut Context<'_>,
-        buf: &mut [u8],
-    ) -> Poll<io::Result<usize>> {
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<io::Result<()>> {
         self.poll_read_priv(cx, buf)
     }
 }
@@ -190,16 +209,28 @@ impl UnixStream {
     pub(crate) fn poll_read_priv(
         &self,
         cx: &mut Context<'_>,
-        buf: &mut [u8],
-    ) -> Poll<io::Result<usize>> {
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<io::Result<()>> {
         ready!(self.io.poll_read_ready(cx, mio::Ready::readable()))?;
 
-        match self.io.get_ref().read(buf) {
+        // Safety: `UnixStream::read` will not peak at the maybe uinitialized bytes.
+        let b =
+            unsafe { &mut *(buf.unfilled_mut() as *mut [std::mem::MaybeUninit<u8>] as *mut [u8]) };
+        match self.io.get_ref().read(b) {
             Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
                 self.io.clear_read_ready(cx, mio::Ready::readable())?;
                 Poll::Pending
             }
-            x => Poll::Ready(x),
+            Ok(n) => {
+                // Safety: We trust `UnixStream::read` to have filled up `n` bytes
+                // in the buffer.
+                unsafe {
+                    buf.assume_init(n);
+                }
+                buf.add_filled(n);
+                Poll::Ready(Ok(()))
+            }
+            Err(e) => Poll::Ready(Err(e)),
         }
     }
 

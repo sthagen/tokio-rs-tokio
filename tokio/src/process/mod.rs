@@ -120,7 +120,7 @@ mod imp;
 
 mod kill;
 
-use crate::io::{AsyncRead, AsyncWrite};
+use crate::io::{AsyncRead, AsyncWrite, ReadBuf};
 use crate::process::kill::Kill;
 
 use std::ffi::OsStr;
@@ -766,6 +766,32 @@ impl Child {
     /// Forces the child to exit.
     ///
     /// This is equivalent to sending a SIGKILL on unix platforms.
+    ///
+    /// If the child has to be killed remotely, it is possible to do it using
+    /// a combination of the select! macro and a oneshot channel. In the following
+    /// example, the child will run until completion unless a message is sent on
+    /// the oneshot channel. If that happens, the child is killed immediately
+    /// using the `.kill()` method.
+    ///
+    /// ```no_run
+    /// use tokio::process::Command;
+    /// use tokio::sync::oneshot::channel;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let (send, recv) = channel::<()>();
+    ///     let mut child = Command::new("sleep").arg("1").spawn().unwrap();
+    ///     tokio::spawn(async move { send.send(()) });
+    ///     tokio::select! {
+    ///         _ = &mut child => {}
+    ///         _ = recv => {
+    ///             &mut child.kill();
+    ///             // NB: await the child here to avoid a zombie process on Unix platforms
+    ///             child.await.unwrap();
+    ///         }
+    ///     }
+    /// }
+
     pub fn kill(&mut self) -> io::Result<()> {
         self.child.kill()
     }
@@ -883,31 +909,21 @@ impl AsyncWrite for ChildStdin {
 }
 
 impl AsyncRead for ChildStdout {
-    unsafe fn prepare_uninitialized_buffer(&self, _buf: &mut [std::mem::MaybeUninit<u8>]) -> bool {
-        // https://github.com/rust-lang/rust/blob/09c817eeb29e764cfc12d0a8d94841e3ffe34023/src/libstd/process.rs#L314
-        false
-    }
-
     fn poll_read(
         mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
-        buf: &mut [u8],
-    ) -> Poll<io::Result<usize>> {
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<io::Result<()>> {
         Pin::new(&mut self.inner).poll_read(cx, buf)
     }
 }
 
 impl AsyncRead for ChildStderr {
-    unsafe fn prepare_uninitialized_buffer(&self, _buf: &mut [std::mem::MaybeUninit<u8>]) -> bool {
-        // https://github.com/rust-lang/rust/blob/09c817eeb29e764cfc12d0a8d94841e3ffe34023/src/libstd/process.rs#L375
-        false
-    }
-
     fn poll_read(
         mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
-        buf: &mut [u8],
-    ) -> Poll<io::Result<usize>> {
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<io::Result<()>> {
         Pin::new(&mut self.inner).poll_read(cx, buf)
     }
 }

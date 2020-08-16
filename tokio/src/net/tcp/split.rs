@@ -9,17 +9,16 @@
 //! level.
 
 use crate::future::poll_fn;
-use crate::io::{AsyncRead, AsyncWrite};
+use crate::io::{AsyncRead, AsyncWrite, ReadBuf};
 use crate::net::TcpStream;
 
 use bytes::Buf;
 use std::io;
-use std::mem::MaybeUninit;
 use std::net::Shutdown;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-/// Read half of a [`TcpStream`], created by [`split`].
+/// Borrowed read half of a [`TcpStream`], created by [`split`].
 ///
 /// Reading from a `ReadHalf` is usually done using the convenience methods found on the
 /// [`AsyncReadExt`] trait. Examples import this trait through [the prelude].
@@ -31,12 +30,12 @@ use std::task::{Context, Poll};
 #[derive(Debug)]
 pub struct ReadHalf<'a>(&'a TcpStream);
 
-/// Write half of a [`TcpStream`], created by [`split`].
+/// Borrowed write half of a [`TcpStream`], created by [`split`].
 ///
 /// Note that in the [`AsyncWrite`] implemenation of this type, [`poll_shutdown`] will
 /// shut down the TCP stream in the write direction.
 ///
-/// Writing to an `OwnedWriteHalf` is usually done using the convenience methods found
+/// Writing to an `WriteHalf` is usually done using the convenience methods found
 /// on the [`AsyncWriteExt`] trait. Examples import this trait through [the prelude].
 ///
 /// [`TcpStream`]: TcpStream
@@ -131,15 +130,11 @@ impl ReadHalf<'_> {
 }
 
 impl AsyncRead for ReadHalf<'_> {
-    unsafe fn prepare_uninitialized_buffer(&self, _: &mut [MaybeUninit<u8>]) -> bool {
-        false
-    }
-
     fn poll_read(
         self: Pin<&mut Self>,
         cx: &mut Context<'_>,
-        buf: &mut [u8],
-    ) -> Poll<io::Result<usize>> {
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<io::Result<()>> {
         self.0.poll_read_priv(cx, buf)
     }
 }

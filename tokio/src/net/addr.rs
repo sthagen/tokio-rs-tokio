@@ -18,7 +18,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV
 /// conversion directly, use [`lookup_host()`](super::lookup_host()).
 ///
 /// This trait is sealed and is intended to be opaque. The details of the trait
-/// will change. Stabilization is pending enhancements to the Rust langague.
+/// will change. Stabilization is pending enhancements to the Rust language.
 pub trait ToSocketAddrs: sealed::ToSocketAddrsPriv {}
 
 type ReadyFuture<T> = future::Ready<io::Result<T>>;
@@ -198,6 +198,19 @@ cfg_dns! {
             MaybeReady::Blocking(spawn_blocking(move || {
                 std::net::ToSocketAddrs::to_socket_addrs(&(&host[..], port))
             }))
+        }
+    }
+
+    // ===== impl (String, u16) =====
+
+    impl ToSocketAddrs for (String, u16) {}
+
+    impl sealed::ToSocketAddrsPriv for (String, u16) {
+        type Iter = sealed::OneOrMore;
+        type Future = sealed::MaybeReady;
+
+        fn to_socket_addrs(&self) -> Self::Future {
+            (self.0.as_str(), self.1).to_socket_addrs()
         }
     }
 

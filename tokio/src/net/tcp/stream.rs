@@ -1,5 +1,5 @@
 use crate::future::poll_fn;
-use crate::io::{AsyncRead, AsyncWrite, PollEvented};
+use crate::io::{AsyncRead, AsyncWrite, PollEvented, ReadBuf};
 use crate::net::tcp::split::{split, ReadHalf, WriteHalf};
 use crate::net::tcp::split_owned::{split_owned, OwnedReadHalf, OwnedWriteHalf};
 use crate::net::ToSocketAddrs;
@@ -9,7 +9,6 @@ use iovec::IoVec;
 use std::convert::TryFrom;
 use std::fmt;
 use std::io::{self, Read, Write};
-use std::mem::MaybeUninit;
 use std::net::{self, Shutdown, SocketAddr};
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -63,13 +62,17 @@ cfg_tcp! {
 impl TcpStream {
     /// Opens a TCP connection to a remote host.
     ///
-    /// `addr` is an address of the remote host. Anything which implements
-    /// `ToSocketAddrs` trait can be supplied for the address.
+    /// `addr` is an address of the remote host. Anything which implements the
+    /// [`ToSocketAddrs`] trait can be supplied as the address. Note that
+    /// strings only implement this trait when the **`dns`** feature is enabled,
+    /// as strings may contain domain names that need to be resolved.
     ///
     /// If `addr` yields multiple addresses, connect will be attempted with each
     /// of the addresses until a connection is successful. If none of the
     /// addresses result in a successful connection, the error returned from the
     /// last connection attempt (the last address) is returned.
+    ///
+    /// [`ToSocketAddrs`]: trait@crate::net::ToSocketAddrs
     ///
     /// # Examples
     ///
@@ -82,6 +85,26 @@ impl TcpStream {
     /// async fn main() -> Result<(), Box<dyn Error>> {
     ///     // Connect to a peer
     ///     let mut stream = TcpStream::connect("127.0.0.1:8080").await?;
+    ///
+    ///     // Write some data.
+    ///     stream.write_all(b"hello world!").await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// Without the `dns` feature:
+    ///
+    /// ```no_run
+    /// use tokio::net::TcpStream;
+    /// use tokio::prelude::*;
+    /// use std::error::Error;
+    /// use std::net::Ipv4Addr;
+    ///
+    /// #[tokio::main]
+    /// async fn main() -> Result<(), Box<dyn Error>> {
+    ///     // Connect to a peer
+    ///     let mut stream = TcpStream::connect((Ipv4Addr::new(127, 0, 0, 1), 8080)).await?;
     ///
     ///     // Write some data.
     ///     stream.write_all(b"hello world!").await?;
@@ -635,6 +658,9 @@ impl TcpStream {
         self.io.get_ref().set_linger(dur)
     }
 
+    // These lifetime markers also appear in the generated documentation, and make
+    // it more clear that this is a *borrowed* split.
+    #[allow(clippy::needless_lifetimes)]
     /// Splits a `TcpStream` into a read half and a write half, which can be used
     /// to read and write the stream concurrently.
     ///
@@ -642,7 +668,7 @@ impl TcpStream {
     /// moved into independently spawned tasks.
     ///
     /// [`into_split`]: TcpStream::into_split()
-    pub fn split(&mut self) -> (ReadHalf<'_>, WriteHalf<'_>) {
+    pub fn split<'a>(&'a mut self) -> (ReadHalf<'a>, WriteHalf<'a>) {
         split(self)
     }
 
@@ -652,9 +678,11 @@ impl TcpStream {
     /// Unlike [`split`], the owned halves can be moved to separate tasks, however
     /// this comes at the cost of a heap allocation.
     ///
-    /// **Note:** Dropping the write half will close the TCP stream in both directions.
+    /// **Note:** Dropping the write half will shut down the write half of the TCP
+    /// stream. This is equivalent to calling [`shutdown(Write)`] on the `TcpStream`.
     ///
     /// [`split`]: TcpStream::split()
+    /// [`shutdown(Write)`]: fn@crate::net::TcpStream::shutdown
     pub fn into_split(self) -> (OwnedReadHalf, OwnedWriteHalf) {
         split_owned(self)
     }
@@ -673,16 +701,28 @@ impl TcpStream {
     pub(crate) fn poll_read_priv(
         &self,
         cx: &mut Context<'_>,
-        buf: &mut [u8],
-    ) -> Poll<io::Result<usize>> {
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<io::Result<()>> {
         ready!(self.io.poll_read_ready(cx, mio::Ready::readable()))?;
 
-        match self.io.get_ref().read(buf) {
+        // Safety: `TcpStream::read` will not peak at the maybe uinitialized bytes.
+        let b =
+            unsafe { &mut *(buf.unfilled_mut() as *mut [std::mem::MaybeUninit<u8>] as *mut [u8]) };
+        match self.io.get_ref().read(b) {
             Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
                 self.io.clear_read_ready(cx, mio::Ready::readable())?;
                 Poll::Pending
             }
-            x => Poll::Ready(x),
+            Ok(n) => {
+                // Safety: We trust `TcpStream::read` to have filled up `n` bytes
+                // in the buffer.
+                unsafe {
+                    buf.assume_init(n);
+                }
+                buf.add_filled(n);
+                Poll::Ready(Ok(()))
+            }
+            Err(e) => Poll::Ready(Err(e)),
         }
     }
 
@@ -835,15 +875,11 @@ impl TryFrom<net::TcpStream> for TcpStream {
 // ===== impl Read / Write =====
 
 impl AsyncRead for TcpStream {
-    unsafe fn prepare_uninitialized_buffer(&self, _: &mut [MaybeUninit<u8>]) -> bool {
-        false
-    }
-
     fn poll_read(
         self: Pin<&mut Self>,
         cx: &mut Context<'_>,
-        buf: &mut [u8],
-    ) -> Poll<io::Result<usize>> {
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<io::Result<()>> {
         self.poll_read_priv(cx, buf)
     }
 }

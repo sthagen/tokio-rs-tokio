@@ -199,17 +199,19 @@ cfg_blocking! {
             }
         }
 
-        let mut had_core = false;
+        let mut had_entered = false;
 
         CURRENT.with(|maybe_cx| {
             match (crate::runtime::enter::context(),  maybe_cx.is_some()) {
                 (EnterContext::Entered { .. }, true) => {
                     // We are on a thread pool runtime thread, so we just need to set up blocking.
+                    had_entered = true;
                 }
                 (EnterContext::Entered { allow_blocking }, false) => {
                     // We are on an executor, but _not_ on the thread pool.
                     // That is _only_ okay if we are in a thread pool runtime's block_on method:
                     if allow_blocking {
+                        had_entered = true;
                         return;
                     } else {
                         // This probably means we are on the basic_scheduler or in a LocalSet,
@@ -245,7 +247,6 @@ cfg_blocking! {
             //
             // First, move the core back into the worker's shared core slot.
             cx.worker.core.set(core);
-            had_core = true;
 
             // Next, clone the worker handle and send it to a new thread for
             // processing.
@@ -256,8 +257,7 @@ cfg_blocking! {
             runtime::spawn_blocking(move || run(worker));
         });
 
-
-        if had_core {
+        if had_entered {
             // Unset the current task's budget. Blocking sections are not
             // constrained by task budgets.
             let _reset = Reset(coop::stop());
@@ -572,6 +572,8 @@ impl Core {
 
         // Drain the queue
         while self.next_local_task().is_some() {}
+
+        park.shutdown();
     }
 
     fn drain_pending_drop(&mut self, worker: &Worker) {
