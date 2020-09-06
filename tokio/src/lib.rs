@@ -10,7 +10,7 @@
     rust_2018_idioms,
     unreachable_pub
 )]
-#![deny(intra_doc_link_resolution_failure)]
+#![cfg_attr(docsrs, deny(broken_intra_doc_links))]
 #![doc(test(
     no_crate_inject,
     attr(deny(warnings, rust_2018_idioms), allow(dead_code, unused_variables))
@@ -196,9 +196,10 @@
 //!
 //! Finally, Tokio provides a _runtime_ for executing asynchronous tasks. Most
 //! applications can use the [`#[tokio::main]`][main] macro to run their code on the
-//! Tokio runtime. In use-cases where manual control over the runtime is
-//! required, the [`tokio::runtime`] module provides APIs for configuring and
-//! managing runtimes.
+//! Tokio runtime. However, this macro provides only basic configuration options. As
+//! an alternative, the [`tokio::runtime`] module provides more powerful APIs for configuring
+//! and managing runtimes. You should use that module if the `#[tokio::main]` macro doesn't
+//! provide the functionality you need.
 //!
 //! Using the runtime requires the "rt-core" or "rt-threaded" feature flags, to
 //! enable the basic [single-threaded scheduler][rt-core] and the [thread-pool
