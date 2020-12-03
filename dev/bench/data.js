@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1606999045746,
+  "lastUpdate": 1606999063712,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -189,6 +189,62 @@ window.BENCHMARK_DATA = {
             "name": "uncontended_concurrent_single",
             "value": 1088,
             "range": "± 10",
+            "unit": "ns/iter"
+          }
+        ]
+      }
+    ],
+    "sync_rwlock": [
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "6c4a677f4bb8a22fe6680f4b5ca56e65cd7c99ae",
+          "message": "Merge pull request #25 from tokio-rs/master\n\nSync Fork from Upstream Repo",
+          "timestamp": "2020-12-03T12:57:13+01:00",
+          "tree_id": "1a4d4bcc017f6a61a652505b1edd4a3bf36ea1ab",
+          "url": "https://github.com/sthagen/tokio/commit/6c4a677f4bb8a22fe6680f4b5ca56e65cd7c99ae"
+        },
+        "date": 1606999062829,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "read_concurrent_contended",
+            "value": 1033,
+            "range": "± 208",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_concurrent_contended_multi",
+            "value": 15959,
+            "range": "± 8293",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_concurrent_uncontended",
+            "value": 1156,
+            "range": "± 449",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_concurrent_uncontended_multi",
+            "value": 20904,
+            "range": "± 16216",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_uncontended",
+            "value": 651,
+            "range": "± 214",
             "unit": "ns/iter"
           }
         ]
