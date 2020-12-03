@@ -10,8 +10,8 @@ use std::mem::{self, MaybeUninit};
 /// This type is a sort of "double cursor". It tracks three regions in the
 /// buffer: a region at the beginning of the buffer that has been logically
 /// filled with data, a region that has been initialized at some point but not
-/// yet logically filled, and a region at the end that is fully uninitialized.
-/// The filled region is guaranteed to be a  subset of the initialized region.
+/// yet logically filled, and a region at the end that may be uninitialized.
+/// The filled region is guaranteed to be a subset of the initialized region.
 ///
 /// In summary, the contents of the buffer can be visualized as:
 ///
@@ -20,6 +20,10 @@ use std::mem::{self, MaybeUninit};
 /// [ filled |         unfilled         ]
 /// [    initialized    | uninitialized ]
 /// ```
+///
+/// It is undefined behavior to de-initialize any bytes from the uninitialized
+/// region, since it is merely unknown whether this region is uninitialized or
+/// not, and if part of it turns out to be initialized, it must stay initialized.
 pub struct ReadBuf<'a> {
     buf: &'a mut [MaybeUninit<u8>],
     filled: usize,
@@ -115,6 +119,7 @@ impl<'a> ReadBuf<'a> {
     /// # Safety
     ///
     /// The caller must not de-initialize portions of the buffer that have already been initialized.
+    /// This includes any bytes in the region marked as uninitialized by `ReadBuf`.
     #[inline]
     pub unsafe fn unfilled_mut(&mut self) -> &mut [MaybeUninit<u8>] {
         &mut self.buf[self.filled..]
@@ -171,7 +176,7 @@ impl<'a> ReadBuf<'a> {
         self.filled = 0;
     }
 
-    /// Increases the size of the filled region of the buffer.
+    /// Advances the size of the filled region of the buffer.
     ///
     /// The number of initialized bytes is not changed.
     ///
@@ -179,7 +184,7 @@ impl<'a> ReadBuf<'a> {
     ///
     /// Panics if the filled region of the buffer would become larger than the initialized region.
     #[inline]
-    pub fn add_filled(&mut self, n: usize) {
+    pub fn advance(&mut self, n: usize) {
         let new = self.filled.checked_add(n).expect("filled overflow");
         self.set_filled(new);
     }
@@ -225,7 +230,7 @@ impl<'a> ReadBuf<'a> {
     ///
     /// Panics if `self.remaining()` is less than `buf.len()`.
     #[inline]
-    pub fn append(&mut self, buf: &[u8]) {
+    pub fn put_slice(&mut self, buf: &[u8]) {
         assert!(
             self.remaining() >= buf.len(),
             "buf.len() must fit in remaining()"

@@ -6,7 +6,7 @@ use std::marker::PhantomData;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-doc_rt_core! {
+cfg_rt! {
     /// An owned permission to join on a task (await its termination).
     ///
     /// This can be thought of as the equivalent of [`std::thread::JoinHandle`] for
@@ -121,7 +121,7 @@ doc_rt_core! {
     /// let original_task = task::spawn(async {
     ///     let _detached_task = task::spawn(async {
     ///         // Here we sleep to make sure that the first task returns before.
-    ///         time::delay_for(Duration::from_millis(10)).await;
+    ///         time::sleep(Duration::from_millis(10)).await;
     ///         // This will be called, even though the JoinHandle is dropped.
     ///         println!("♫ Still alive ♫");
     ///     });
@@ -133,7 +133,7 @@ doc_rt_core! {
     /// // We make sure that the new task has time to run, before the main
     /// // task returns.
     ///
-    /// time::delay_for(Duration::from_millis(1000)).await;
+    /// time::sleep(Duration::from_millis(1000)).await;
     /// # }
     /// ```
     ///
@@ -155,6 +155,44 @@ impl<T> JoinHandle<T> {
         JoinHandle {
             raw: Some(raw),
             _p: PhantomData,
+        }
+    }
+
+    /// Abort the task associated with the handle.
+    ///
+    /// Awaiting a cancelled task might complete as usual if the task was
+    /// already completed at the time it was cancelled, but most likely it
+    /// will complete with a `Err(JoinError::Cancelled)`.
+    ///
+    /// ```rust
+    /// use tokio::time;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///    let mut handles = Vec::new();
+    ///
+    ///    handles.push(tokio::spawn(async {
+    ///       time::sleep(time::Duration::from_secs(10)).await;
+    ///       true
+    ///    }));
+    ///
+    ///    handles.push(tokio::spawn(async {
+    ///       time::sleep(time::Duration::from_secs(10)).await;
+    ///       false
+    ///    }));
+    ///
+    ///    for handle in &handles {
+    ///        handle.abort();
+    ///    }
+    ///
+    ///    for handle in handles {
+    ///        assert!(handle.await.unwrap_err().is_cancelled());
+    ///    }
+    /// }
+    /// ```
+    pub fn abort(&self) {
+        if let Some(raw) = self.raw {
+            raw.shutdown();
         }
     }
 }

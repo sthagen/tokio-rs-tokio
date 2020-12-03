@@ -1,18 +1,15 @@
-use crate::future::poll_fn;
-use crate::io::PollEvented;
-use crate::net::unix::datagram::split::{split, RecvHalf, SendHalf};
-use crate::net::unix::datagram::split_owned::{split_owned, OwnedRecvHalf, OwnedSendHalf};
+use crate::io::{Interest, PollEvented};
+use crate::net::unix::SocketAddr;
 
 use std::convert::TryFrom;
 use std::fmt;
 use std::io;
 use std::net::Shutdown;
 use std::os::unix::io::{AsRawFd, RawFd};
-use std::os::unix::net::{self, SocketAddr};
+use std::os::unix::net;
 use std::path::Path;
-use std::task::{Context, Poll};
 
-cfg_uds! {
+cfg_net_unix! {
     /// An I/O object representing a Unix datagram socket.
     ///
     /// A socket can be either named (associated with a filesystem path) or
@@ -38,9 +35,9 @@ cfg_uds! {
     ///
     /// // Bind each socket to a filesystem path
     /// let tx_path = tmp.path().join("tx");
-    /// let mut tx = UnixDatagram::bind(&tx_path)?;
+    /// let tx = UnixDatagram::bind(&tx_path)?;
     /// let rx_path = tmp.path().join("rx");
-    /// let mut rx = UnixDatagram::bind(&rx_path)?;
+    /// let rx = UnixDatagram::bind(&rx_path)?;
     ///
     /// let bytes = b"hello world";
     /// tx.send_to(bytes, &rx_path).await?;
@@ -64,7 +61,7 @@ cfg_uds! {
     /// use tokio::net::UnixDatagram;
     ///
     /// // Create the pair of sockets
-    /// let (mut sock1, mut sock2) = UnixDatagram::pair()?;
+    /// let (sock1, sock2) = UnixDatagram::pair()?;
     ///
     /// // Since the sockets are paired, the paired send/recv
     /// // functions can be used
@@ -81,7 +78,7 @@ cfg_uds! {
     /// # }
     /// ```
     pub struct UnixDatagram {
-        io: PollEvented<mio_uds::UnixDatagram>,
+        io: PollEvented<mio::net::UnixDatagram>,
     }
 }
 
@@ -111,7 +108,7 @@ impl UnixDatagram {
     where
         P: AsRef<Path>,
     {
-        let socket = mio_uds::UnixDatagram::bind(path)?;
+        let socket = mio::net::UnixDatagram::bind(path)?;
         UnixDatagram::new(socket)
     }
 
@@ -128,7 +125,7 @@ impl UnixDatagram {
     /// use tokio::net::UnixDatagram;
     ///
     /// // Create the pair of sockets
-    /// let (mut sock1, mut sock2) = UnixDatagram::pair()?;
+    /// let (sock1, sock2) = UnixDatagram::pair()?;
     ///
     /// // Since the sockets are paired, the paired send/recv
     /// // functions can be used
@@ -145,18 +142,19 @@ impl UnixDatagram {
     /// # }
     /// ```
     pub fn pair() -> io::Result<(UnixDatagram, UnixDatagram)> {
-        let (a, b) = mio_uds::UnixDatagram::pair()?;
+        let (a, b) = mio::net::UnixDatagram::pair()?;
         let a = UnixDatagram::new(a)?;
         let b = UnixDatagram::new(b)?;
 
         Ok((a, b))
     }
 
-    /// Consumes a `UnixDatagram` in the standard library and returns a
-    /// nonblocking `UnixDatagram` from this crate.
+    /// Creates new `UnixDatagram` from a `std::os::unix::net::UnixDatagram`.
     ///
-    /// The returned datagram will be associated with the given event loop
-    /// specified by `handle` and is ready to perform I/O.
+    /// This function is intended to be used to wrap a UnixDatagram from the
+    /// standard library in the Tokio equivalent. The conversion assumes
+    /// nothing about the underlying datagram; it is left up to the user to set
+    /// it in non-blocking mode.
     ///
     /// # Panics
     ///
@@ -181,18 +179,19 @@ impl UnixDatagram {
     /// // Bind the socket to a filesystem path
     /// let socket_path = tmp.path().join("socket");
     /// let std_socket = StdUDS::bind(&socket_path)?;
+    /// std_socket.set_nonblocking(true)?;
     /// let tokio_socket = UnixDatagram::from_std(std_socket)?;
     ///
     /// # Ok(())
     /// # }
     /// ```
     pub fn from_std(datagram: net::UnixDatagram) -> io::Result<UnixDatagram> {
-        let socket = mio_uds::UnixDatagram::from_datagram(datagram)?;
+        let socket = mio::net::UnixDatagram::from_std(datagram);
         let io = PollEvented::new(socket)?;
         Ok(UnixDatagram { io })
     }
 
-    fn new(socket: mio_uds::UnixDatagram) -> io::Result<UnixDatagram> {
+    fn new(socket: mio::net::UnixDatagram) -> io::Result<UnixDatagram> {
         let io = PollEvented::new(socket)?;
         Ok(UnixDatagram { io })
     }
@@ -208,12 +207,12 @@ impl UnixDatagram {
     /// use tempfile::tempdir;
     ///
     /// // Create an unbound socket
-    /// let mut tx = UnixDatagram::unbound()?;
+    /// let tx = UnixDatagram::unbound()?;
     ///
     /// // Create another, bound socket
     /// let tmp = tempdir()?;
     /// let rx_path = tmp.path().join("rx");
-    /// let mut rx = UnixDatagram::bind(&rx_path)?;
+    /// let rx = UnixDatagram::bind(&rx_path)?;
     ///
     /// // Send to the bound socket
     /// let bytes = b"hello world";
@@ -229,7 +228,7 @@ impl UnixDatagram {
     /// # }
     /// ```
     pub fn unbound() -> io::Result<UnixDatagram> {
-        let socket = mio_uds::UnixDatagram::unbound()?;
+        let socket = mio::net::UnixDatagram::unbound()?;
         UnixDatagram::new(socket)
     }
 
@@ -247,12 +246,12 @@ impl UnixDatagram {
     /// use tempfile::tempdir;
     ///
     /// // Create an unbound socket
-    /// let mut tx = UnixDatagram::unbound()?;
+    /// let tx = UnixDatagram::unbound()?;
     ///
     /// // Create another, bound socket
     /// let tmp = tempdir()?;
     /// let rx_path = tmp.path().join("rx");
-    /// let mut rx = UnixDatagram::bind(&rx_path)?;
+    /// let rx = UnixDatagram::bind(&rx_path)?;
     ///
     /// // Connect to the bound socket
     /// tx.connect(&rx_path)?;
@@ -271,7 +270,7 @@ impl UnixDatagram {
     /// # }
     /// ```
     pub fn connect<P: AsRef<Path>>(&self, path: P) -> io::Result<()> {
-        self.io.get_ref().connect(path)
+        self.io.connect(path)
     }
 
     /// Sends data on the socket to the socket's peer.
@@ -284,7 +283,7 @@ impl UnixDatagram {
     /// use tokio::net::UnixDatagram;
     ///
     /// // Create the pair of sockets
-    /// let (mut sock1, mut sock2) = UnixDatagram::pair()?;
+    /// let (sock1, sock2) = UnixDatagram::pair()?;
     ///
     /// // Since the sockets are paired, the paired send/recv
     /// // functions can be used
@@ -300,8 +299,11 @@ impl UnixDatagram {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn send(&mut self, buf: &[u8]) -> io::Result<usize> {
-        poll_fn(|cx| self.poll_send_priv(cx, buf)).await
+    pub async fn send(&self, buf: &[u8]) -> io::Result<usize> {
+        self.io
+            .registration()
+            .async_io(Interest::WRITABLE, || self.io.send(buf))
+            .await
     }
 
     /// Try to send a datagram to the peer without waiting.
@@ -315,7 +317,7 @@ impl UnixDatagram {
     /// let bytes = b"bytes";
     /// // We use a socket pair so that they are assigned
     /// // each other as a peer.
-    /// let (mut first, mut second) = UnixDatagram::pair()?;
+    /// let (first, second) = UnixDatagram::pair()?;
     ///
     /// let size = first.try_send(bytes)?;
     /// assert_eq!(size, bytes.len());
@@ -328,8 +330,8 @@ impl UnixDatagram {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn try_send(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.io.get_ref().send(buf)
+    pub fn try_send(&self, buf: &[u8]) -> io::Result<usize> {
+        self.io.send(buf)
     }
 
     /// Try to send a datagram to the peer without waiting.
@@ -347,10 +349,10 @@ impl UnixDatagram {
     /// let tmp = tempdir().unwrap();
     ///
     /// let server_path = tmp.path().join("server");
-    /// let mut server = UnixDatagram::bind(&server_path)?;
+    /// let server = UnixDatagram::bind(&server_path)?;
     ///
     /// let client_path = tmp.path().join("client");
-    /// let mut client = UnixDatagram::bind(&client_path)?;
+    /// let client = UnixDatagram::bind(&client_path)?;
     ///
     /// let size = client.try_send_to(bytes, &server_path)?;
     /// assert_eq!(size, bytes.len());
@@ -364,37 +366,11 @@ impl UnixDatagram {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn try_send_to<P>(&mut self, buf: &[u8], target: P) -> io::Result<usize>
+    pub fn try_send_to<P>(&self, buf: &[u8], target: P) -> io::Result<usize>
     where
         P: AsRef<Path>,
     {
-        self.io.get_ref().send_to(buf, target)
-    }
-
-    // Poll IO functions that takes `&self` are provided for the split API.
-    //
-    // They are not public because (taken from the doc of `PollEvented`):
-    //
-    // While `PollEvented` is `Sync` (if the underlying I/O type is `Sync`), the
-    // caller must ensure that there are at most two tasks that use a
-    // `PollEvented` instance concurrently. One for reading and one for writing.
-    // While violating this requirement is "safe" from a Rust memory model point
-    // of view, it will result in unexpected behavior in the form of lost
-    // notifications and tasks hanging.
-    pub(crate) fn poll_send_priv(
-        &self,
-        cx: &mut Context<'_>,
-        buf: &[u8],
-    ) -> Poll<io::Result<usize>> {
-        ready!(self.io.poll_write_ready(cx))?;
-
-        match self.io.get_ref().send(buf) {
-            Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
-                self.io.clear_write_ready(cx)?;
-                Poll::Pending
-            }
-            x => Poll::Ready(x),
-        }
+        self.io.send_to(buf, target)
     }
 
     /// Receives data from the socket.
@@ -407,7 +383,7 @@ impl UnixDatagram {
     /// use tokio::net::UnixDatagram;
     ///
     /// // Create the pair of sockets
-    /// let (mut sock1, mut sock2) = UnixDatagram::pair()?;
+    /// let (sock1, sock2) = UnixDatagram::pair()?;
     ///
     /// // Since the sockets are paired, the paired send/recv
     /// // functions can be used
@@ -423,8 +399,11 @@ impl UnixDatagram {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn recv(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        poll_fn(|cx| self.poll_recv_priv(cx, buf)).await
+    pub async fn recv(&self, buf: &mut [u8]) -> io::Result<usize> {
+        self.io
+            .registration()
+            .async_io(Interest::READABLE, || self.io.recv(buf))
+            .await
     }
 
     /// Try to receive a datagram from the peer without waiting.
@@ -438,7 +417,7 @@ impl UnixDatagram {
     /// let bytes = b"bytes";
     /// // We use a socket pair so that they are assigned
     /// // each other as a peer.
-    /// let (mut first, mut second) = UnixDatagram::pair()?;
+    /// let (first, second) = UnixDatagram::pair()?;
     ///
     /// let size = first.try_send(bytes)?;
     /// assert_eq!(size, bytes.len());
@@ -451,24 +430,8 @@ impl UnixDatagram {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn try_recv(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.io.get_ref().recv(buf)
-    }
-
-    pub(crate) fn poll_recv_priv(
-        &self,
-        cx: &mut Context<'_>,
-        buf: &mut [u8],
-    ) -> Poll<io::Result<usize>> {
-        ready!(self.io.poll_read_ready(cx, mio::Ready::readable()))?;
-
-        match self.io.get_ref().recv(buf) {
-            Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
-                self.io.clear_read_ready(cx, mio::Ready::readable())?;
-                Poll::Pending
-            }
-            x => Poll::Ready(x),
-        }
+    pub fn try_recv(&self, buf: &mut [u8]) -> io::Result<usize> {
+        self.io.recv(buf)
     }
 
     /// Sends data on the socket to the specified address.
@@ -487,9 +450,9 @@ impl UnixDatagram {
     ///
     /// // Bind each socket to a filesystem path
     /// let tx_path = tmp.path().join("tx");
-    /// let mut tx = UnixDatagram::bind(&tx_path)?;
+    /// let tx = UnixDatagram::bind(&tx_path)?;
     /// let rx_path = tmp.path().join("rx");
-    /// let mut rx = UnixDatagram::bind(&rx_path)?;
+    /// let rx = UnixDatagram::bind(&rx_path)?;
     ///
     /// let bytes = b"hello world";
     /// tx.send_to(bytes, &rx_path).await?;
@@ -504,28 +467,14 @@ impl UnixDatagram {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn send_to<P>(&mut self, buf: &[u8], target: P) -> io::Result<usize>
+    pub async fn send_to<P>(&self, buf: &[u8], target: P) -> io::Result<usize>
     where
-        P: AsRef<Path> + Unpin,
+        P: AsRef<Path>,
     {
-        poll_fn(|cx| self.poll_send_to_priv(cx, buf, target.as_ref())).await
-    }
-
-    pub(crate) fn poll_send_to_priv(
-        &self,
-        cx: &mut Context<'_>,
-        buf: &[u8],
-        target: &Path,
-    ) -> Poll<io::Result<usize>> {
-        ready!(self.io.poll_write_ready(cx))?;
-
-        match self.io.get_ref().send_to(buf, target) {
-            Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
-                self.io.clear_write_ready(cx)?;
-                Poll::Pending
-            }
-            x => Poll::Ready(x),
-        }
+        self.io
+            .registration()
+            .async_io(Interest::WRITABLE, || self.io.send_to(buf, target.as_ref()))
+            .await
     }
 
     /// Receives data from the socket.
@@ -544,9 +493,9 @@ impl UnixDatagram {
     ///
     /// // Bind each socket to a filesystem path
     /// let tx_path = tmp.path().join("tx");
-    /// let mut tx = UnixDatagram::bind(&tx_path)?;
+    /// let tx = UnixDatagram::bind(&tx_path)?;
     /// let rx_path = tmp.path().join("rx");
-    /// let mut rx = UnixDatagram::bind(&rx_path)?;
+    /// let rx = UnixDatagram::bind(&rx_path)?;
     ///
     /// let bytes = b"hello world";
     /// tx.send_to(bytes, &rx_path).await?;
@@ -561,8 +510,14 @@ impl UnixDatagram {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn recv_from(&mut self, buf: &mut [u8]) -> io::Result<(usize, SocketAddr)> {
-        poll_fn(|cx| self.poll_recv_from_priv(cx, buf)).await
+    pub async fn recv_from(&self, buf: &mut [u8]) -> io::Result<(usize, SocketAddr)> {
+        let (n, addr) = self
+            .io
+            .registration()
+            .async_io(Interest::READABLE, || self.io.recv_from(buf))
+            .await?;
+
+        Ok((n, SocketAddr(addr)))
     }
 
     /// Try to receive data from the socket without waiting.
@@ -580,10 +535,10 @@ impl UnixDatagram {
     /// let tmp = tempdir().unwrap();
     ///
     /// let server_path = tmp.path().join("server");
-    /// let mut server = UnixDatagram::bind(&server_path)?;
+    /// let server = UnixDatagram::bind(&server_path)?;
     ///
     /// let client_path = tmp.path().join("client");
-    /// let mut client = UnixDatagram::bind(&client_path)?;
+    /// let client = UnixDatagram::bind(&client_path)?;
     ///
     /// let size = client.try_send_to(bytes, &server_path)?;
     /// assert_eq!(size, bytes.len());
@@ -597,24 +552,9 @@ impl UnixDatagram {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn try_recv_from(&mut self, buf: &mut [u8]) -> io::Result<(usize, SocketAddr)> {
-        self.io.get_ref().recv_from(buf)
-    }
-
-    pub(crate) fn poll_recv_from_priv(
-        &self,
-        cx: &mut Context<'_>,
-        buf: &mut [u8],
-    ) -> Poll<Result<(usize, SocketAddr), io::Error>> {
-        ready!(self.io.poll_read_ready(cx, mio::Ready::readable()))?;
-
-        match self.io.get_ref().recv_from(buf) {
-            Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
-                self.io.clear_read_ready(cx, mio::Ready::readable())?;
-                Poll::Pending
-            }
-            x => Poll::Ready(x),
-        }
+    pub fn try_recv_from(&self, buf: &mut [u8]) -> io::Result<(usize, SocketAddr)> {
+        let (n, addr) = self.io.recv_from(buf)?;
+        Ok((n, SocketAddr(addr)))
     }
 
     /// Returns the local address that this socket is bound to.
@@ -658,7 +598,7 @@ impl UnixDatagram {
     /// # }
     /// ```
     pub fn local_addr(&self) -> io::Result<SocketAddr> {
-        self.io.get_ref().local_addr()
+        self.io.local_addr().map(SocketAddr)
     }
 
     /// Returns the address of this socket's peer.
@@ -707,7 +647,7 @@ impl UnixDatagram {
     /// # }
     /// ```
     pub fn peer_addr(&self) -> io::Result<SocketAddr> {
-        self.io.get_ref().peer_addr()
+        self.io.peer_addr().map(SocketAddr)
     }
 
     /// Returns the value of the `SO_ERROR` option.
@@ -730,7 +670,7 @@ impl UnixDatagram {
     /// # }
     /// ```
     pub fn take_error(&self) -> io::Result<Option<io::Error>> {
-        self.io.get_ref().take_error()
+        self.io.take_error()
     }
 
     /// Shuts down the read, write, or both halves of this connection.
@@ -748,7 +688,7 @@ impl UnixDatagram {
     /// use std::net::Shutdown;
     ///
     /// // Create an unbound socket
-    /// let (mut socket, other) = UnixDatagram::pair()?;
+    /// let (socket, other) = UnixDatagram::pair()?;
     ///
     /// socket.shutdown(Shutdown::Both)?;
     ///
@@ -766,129 +706,30 @@ impl UnixDatagram {
     /// # }
     /// ```
     pub fn shutdown(&self, how: Shutdown) -> io::Result<()> {
-        self.io.get_ref().shutdown(how)
-    }
-
-    // These lifetime markers also appear in the generated documentation, and make
-    // it more clear that this is a *borrowed* split.
-    #[allow(clippy::needless_lifetimes)]
-    /// Split a `UnixDatagram` into a receive half and a send half, which can be used
-    /// to receive and send the datagram concurrently.
-    ///
-    /// This method is more efficient than [`into_split`], but the halves cannot
-    /// be moved into independently spawned tasks.
-    ///
-    /// [`into_split`]: fn@crate::net::UnixDatagram::into_split
-    ///
-    /// # Examples
-    /// ```
-    /// # use std::error::Error;
-    /// # #[tokio::main]
-    /// # async fn main() -> Result<(), Box<dyn Error>> {
-    /// use tokio::net::UnixDatagram;
-    ///
-    /// // Create the pair of sockets
-    /// let (mut sock1, mut sock2) = UnixDatagram::pair()?;
-    ///
-    /// // Split sock1
-    /// let (sock1_rx, mut sock1_tx) = sock1.split();
-    ///
-    /// // Since the sockets are paired, the paired send/recv
-    /// // functions can be used
-    /// let bytes = b"hello world";
-    /// sock1_tx.send(bytes).await?;
-    ///
-    /// let mut buff = vec![0u8; 24];
-    /// let size = sock2.recv(&mut buff).await?;
-    ///
-    /// let dgram = &buff[..size];
-    /// assert_eq!(dgram, bytes);
-    ///
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn split<'a>(&'a mut self) -> (RecvHalf<'a>, SendHalf<'a>) {
-        split(self)
-    }
-
-    /// Split a `UnixDatagram` into a receive half and a send half, which can be used
-    /// to receive and send the datagram concurrently.
-    ///
-    /// Unlike [`split`], the owned halves can be moved to separate tasks,
-    /// however this comes at the cost of a heap allocation.
-    ///
-    /// **Note:** Dropping the write half will shut down the write half of the
-    /// datagram. This is equivalent to calling [`shutdown(Write)`].
-    ///
-    /// # Examples
-    /// ```
-    /// # use std::error::Error;
-    /// # #[tokio::main]
-    /// # async fn main() -> Result<(), Box<dyn Error>> {
-    /// use tokio::net::UnixDatagram;
-    ///
-    /// // Create the pair of sockets
-    /// let (sock1, mut sock2) = UnixDatagram::pair()?;
-    ///
-    /// // Split sock1
-    /// let (sock1_rx, mut sock1_tx) = sock1.into_split();
-    ///
-    /// // Since the sockets are paired, the paired send/recv
-    /// // functions can be used
-    /// let bytes = b"hello world";
-    /// sock1_tx.send(bytes).await?;
-    ///
-    /// let mut buff = vec![0u8; 24];
-    /// let size = sock2.recv(&mut buff).await?;
-    ///
-    /// let dgram = &buff[..size];
-    /// assert_eq!(dgram, bytes);
-    ///
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// [`split`]: fn@crate::net::UnixDatagram::split
-    /// [`shutdown(Write)`]:fn@crate::net::UnixDatagram::shutdown
-    pub fn into_split(self) -> (OwnedRecvHalf, OwnedSendHalf) {
-        split_owned(self)
+        self.io.shutdown(how)
     }
 }
 
-impl TryFrom<UnixDatagram> for mio_uds::UnixDatagram {
-    type Error = io::Error;
-
-    /// Consumes value, returning the mio I/O object.
-    ///
-    /// See [`PollEvented::into_inner`] for more details about
-    /// resource deregistration that happens during the call.
-    ///
-    /// [`PollEvented::into_inner`]: crate::io::PollEvented::into_inner
-    fn try_from(value: UnixDatagram) -> Result<Self, Self::Error> {
-        value.io.into_inner()
-    }
-}
-
-impl TryFrom<net::UnixDatagram> for UnixDatagram {
+impl TryFrom<std::os::unix::net::UnixDatagram> for UnixDatagram {
     type Error = io::Error;
 
     /// Consumes stream, returning the Tokio I/O object.
     ///
     /// This is equivalent to
     /// [`UnixDatagram::from_std(stream)`](UnixDatagram::from_std).
-    fn try_from(stream: net::UnixDatagram) -> Result<Self, Self::Error> {
+    fn try_from(stream: std::os::unix::net::UnixDatagram) -> Result<Self, Self::Error> {
         Self::from_std(stream)
     }
 }
 
 impl fmt::Debug for UnixDatagram {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.io.get_ref().fmt(f)
+        self.io.fmt(f)
     }
 }
 
 impl AsRawFd for UnixDatagram {
     fn as_raw_fd(&self) -> RawFd {
-        self.io.get_ref().as_raw_fd()
+        self.io.as_raw_fd()
     }
 }

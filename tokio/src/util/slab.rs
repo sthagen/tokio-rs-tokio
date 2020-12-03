@@ -1,3 +1,5 @@
+#![cfg_attr(not(feature = "rt"), allow(dead_code))]
+
 use crate::loom::cell::UnsafeCell;
 use crate::loom::sync::atomic::{AtomicBool, AtomicUsize};
 use crate::loom::sync::{Arc, Mutex};
@@ -141,6 +143,8 @@ unsafe impl<T: Sync> Sync for Page<T> {}
 unsafe impl<T: Sync> Send for Page<T> {}
 unsafe impl<T: Sync> Sync for CachedPage<T> {}
 unsafe impl<T: Sync> Send for CachedPage<T> {}
+unsafe impl<T: Sync> Sync for Ref<T> {}
+unsafe impl<T: Sync> Send for Ref<T> {}
 
 /// A slot in the slab. Contains slot-specific metadata.
 ///
@@ -268,7 +272,7 @@ impl<T> Slab<T> {
     pub(crate) fn compact(&mut self) {
         // Iterate each page except the very first one. The very first page is
         // never freed.
-        for (idx, page) in (&self.pages[1..]).iter().enumerate() {
+        for (idx, page) in self.pages.iter().enumerate().skip(1) {
             if page.used.load(Relaxed) != 0 || !page.allocated.load(Relaxed) {
                 // If the page has slots in use or the memory has not been
                 // allocated then it cannot be compacted.
@@ -276,7 +280,7 @@ impl<T> Slab<T> {
             }
 
             let mut slots = match page.slots.try_lock() {
-                Ok(slots) => slots,
+                Some(slots) => slots,
                 // If the lock cannot be acquired due to being held by another
                 // thread, don't try to compact the page.
                 _ => continue,
@@ -297,6 +301,13 @@ impl<T> Slab<T> {
 
             // Drop the lock so we can drop the vector outside the lock below.
             drop(slots);
+
+            debug_assert!(
+                self.cached[idx].slots.is_null() || self.cached[idx].slots == vec.as_ptr(),
+                "cached = {:?}; actual = {:?}",
+                self.cached[idx].slots,
+                vec.as_ptr(),
+            );
 
             // Clear cache
             self.cached[idx].slots = ptr::null();
@@ -374,7 +385,7 @@ impl<T: Entry> Page<T> {
         }
 
         // Allocating objects requires synchronization
-        let mut locked = me.slots.lock().unwrap();
+        let mut locked = me.slots.lock();
 
         if locked.head < locked.slots.len() {
             // Re-use an already initialized slot.
@@ -469,7 +480,7 @@ impl<T> Default for Page<T> {
 impl<T> Page<T> {
     /// Release a slot into the page's free list
     fn release(&self, value: *const Value<T>) {
-        let mut locked = self.slots.lock().unwrap();
+        let mut locked = self.slots.lock();
 
         let idx = locked.index_for(value);
         locked.slots[idx].next = locked.head as u32;
@@ -483,9 +494,12 @@ impl<T> Page<T> {
 impl<T> CachedPage<T> {
     /// Refresh the cache
     fn refresh(&mut self, page: &Page<T>) {
-        let slots = page.slots.lock().unwrap();
-        self.slots = slots.slots.as_ptr();
-        self.init = slots.slots.len();
+        let slots = page.slots.lock();
+
+        if !slots.slots.is_empty() {
+            self.slots = slots.slots.as_ptr();
+            self.init = slots.slots.len();
+        }
     }
 
     // Get a value by index
@@ -784,6 +798,43 @@ mod test {
             // The first page is never freed
             for addr in &addrs[PAGE_INITIAL_SIZE..] {
                 assert!(slab.get(*addr).is_none());
+            }
+        }
+    }
+
+    #[test]
+    fn issue_3014() {
+        let mut slab = Slab::<Foo>::new();
+        let alloc = slab.allocator();
+        let mut entries = vec![];
+
+        for _ in 0..5 {
+            entries.clear();
+
+            // Allocate a few pages + 1
+            for i in 0..(32 + 64 + 128 + 1) {
+                let (addr, val) = alloc.allocate().unwrap();
+                val.id.store(i, SeqCst);
+
+                entries.push((addr, val, i));
+            }
+
+            for (addr, val, i) in &entries {
+                assert_eq!(*i, val.id.load(SeqCst));
+                assert_eq!(*i, slab.get(*addr).unwrap().id.load(SeqCst));
+            }
+
+            // Release the last entry
+            entries.pop();
+
+            // Compact
+            slab.compact();
+
+            // Check all the addresses
+
+            for (addr, val, i) in &entries {
+                assert_eq!(*i, val.id.load(SeqCst));
+                assert_eq!(*i, slab.get(*addr).unwrap().id.load(SeqCst));
             }
         }
     }

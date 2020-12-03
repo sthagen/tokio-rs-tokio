@@ -209,7 +209,7 @@ mod group_b {
     #[test]
     fn complete_block_on_under_load() {
         loom::model(|| {
-            let mut pool = mk_pool(1);
+            let pool = mk_pool(1);
 
             pool.block_on(async {
                 // Trigger a re-schedule
@@ -296,9 +296,8 @@ mod group_d {
 }
 
 fn mk_pool(num_threads: usize) -> Runtime {
-    runtime::Builder::new()
-        .threaded_scheduler()
-        .core_threads(num_threads)
+    runtime::Builder::new_multi_thread()
+        .worker_threads(num_threads)
         .build()
         .unwrap()
 }

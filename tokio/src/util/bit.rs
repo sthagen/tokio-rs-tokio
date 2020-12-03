@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub(crate) struct Pack {
     mask: usize,
     shift: u32,
@@ -20,12 +20,6 @@ impl Pack {
         let mask = mask_for(width) << shift;
 
         Pack { mask, shift }
-    }
-
-    /// Mask used to unpack value
-    #[cfg(all(test, loom))]
-    pub(crate) const fn mask(&self) -> usize {
-        self.mask
     }
 
     /// Width, in bits, dedicated to storing the value.

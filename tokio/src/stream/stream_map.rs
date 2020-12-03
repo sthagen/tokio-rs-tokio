@@ -57,8 +57,8 @@ use std::task::{Context, Poll};
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     let (mut tx1, rx1) = mpsc::channel(10);
-///     let (mut tx2, rx2) = mpsc::channel(10);
+///     let (tx1, rx1) = mpsc::channel(10);
+///     let (tx2, rx2) = mpsc::channel(10);
 ///
 ///     tokio::spawn(async move {
 ///         tx1.send(1).await.unwrap();
@@ -156,13 +156,59 @@ use std::task::{Context, Poll};
 ///     }
 /// }
 /// ```
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct StreamMap<K, V> {
     /// Streams stored in the map
     entries: Vec<(K, V)>,
 }
 
 impl<K, V> StreamMap<K, V> {
+    /// An iterator visiting all key-value pairs in arbitrary order.
+    ///
+    /// The iterator element type is &'a (K, V).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use tokio::stream::{StreamMap, pending};
+    ///
+    /// let mut map = StreamMap::new();
+    ///
+    /// map.insert("a", pending::<i32>());
+    /// map.insert("b", pending());
+    /// map.insert("c", pending());
+    ///
+    /// for (key, stream) in map.iter() {
+    ///     println!("({}, {:?})", key, stream);
+    /// }
+    /// ```
+    pub fn iter(&self) -> impl Iterator<Item = &(K, V)> {
+        self.entries.iter()
+    }
+
+    /// An iterator visiting all key-value pairs mutably in arbitrary order.
+    ///
+    /// The iterator element type is &'a mut (K, V).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use tokio::stream::{StreamMap, pending};
+    ///
+    /// let mut map = StreamMap::new();
+    ///
+    /// map.insert("a", pending::<i32>());
+    /// map.insert("b", pending());
+    /// map.insert("c", pending());
+    ///
+    /// for (key, stream) in map.iter_mut() {
+    ///     println!("({}, {:?})", key, stream);
+    /// }
+    /// ```
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut (K, V)> {
+        self.entries.iter_mut()
+    }
+
     /// Creates an empty `StreamMap`.
     ///
     /// The stream map is initially created with a capacity of `0`, so it will
@@ -217,7 +263,7 @@ impl<K, V> StreamMap<K, V> {
     /// }
     /// ```
     pub fn keys(&self) -> impl Iterator<Item = &K> {
-        self.entries.iter().map(|(k, _)| k)
+        self.iter().map(|(k, _)| k)
     }
 
     /// An iterator visiting all values in arbitrary order.
@@ -240,7 +286,7 @@ impl<K, V> StreamMap<K, V> {
     /// }
     /// ```
     pub fn values(&self) -> impl Iterator<Item = &V> {
-        self.entries.iter().map(|(_, v)| v)
+        self.iter().map(|(_, v)| v)
     }
 
     /// An iterator visiting all values mutably in arbitrary order.
@@ -263,7 +309,7 @@ impl<K, V> StreamMap<K, V> {
     /// }
     /// ```
     pub fn values_mut(&mut self) -> impl Iterator<Item = &mut V> {
-        self.entries.iter_mut().map(|(_, v)| v)
+        self.iter_mut().map(|(_, v)| v)
     }
 
     /// Returns the number of streams the map can hold without reallocating.
@@ -464,6 +510,12 @@ where
         } else {
             Pending
         }
+    }
+}
+
+impl<K, V> Default for StreamMap<K, V> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

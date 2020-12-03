@@ -22,7 +22,7 @@
 //! `std::io::ErrorKind::WouldBlock` if a *worker* thread can not be converted
 //! to a *backup* thread immediately.
 //!
-//! [`AsyncRead`]: https://docs.rs/tokio-io/0.1/tokio_io/trait.AsyncRead.html
+//! [`AsyncRead`]: trait@crate::io::AsyncRead
 
 mod canonicalize;
 pub use self::canonicalize::canonicalize;
@@ -107,6 +107,6 @@ mod sys {
     pub(crate) use std::fs::File;
 
     // TODO: don't rename
-    pub(crate) use crate::runtime::spawn_blocking as run;
-    pub(crate) use crate::task::JoinHandle as Blocking;
+    pub(crate) use crate::blocking::spawn_blocking as run;
+    pub(crate) use crate::blocking::JoinHandle as Blocking;
 }

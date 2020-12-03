@@ -1,5 +1,4 @@
 use super::ReadBuf;
-use bytes::BufMut;
 use std::io;
 use std::ops::DerefMut;
 use std::pin::Pin;
@@ -16,9 +15,10 @@ use std::task::{Context, Poll};
 /// Specifically, this means that the `poll_read` function will return one of
 /// the following:
 ///
-/// * `Poll::Ready(Ok(n))` means that `n` bytes of data was immediately read
-///   and placed into the output buffer, where `n` == 0 implies that EOF has
-///   been reached.
+/// * `Poll::Ready(Ok(()))` means that data was immediately read and placed into
+///   the output buffer. The amount of data read can be determined by the
+///   increase in the length of the slice returned by `ReadBuf::filled`. If the
+///   difference is 0, EOF has been reached.
 ///
 /// * `Poll::Pending` means that no data was read into the buffer
 ///   provided. The I/O object is not currently readable but may become readable
@@ -43,47 +43,18 @@ use std::task::{Context, Poll};
 pub trait AsyncRead {
     /// Attempts to read from the `AsyncRead` into `buf`.
     ///
-    /// On success, returns `Poll::Ready(Ok(num_bytes_read))`.
+    /// On success, returns `Poll::Ready(Ok(()))` and fills `buf` with data
+    /// read. If no data was read (`buf.filled().is_empty()`) it implies that
+    /// EOF has been reached.
     ///
-    /// If no data is available for reading, the method returns
-    /// `Poll::Pending` and arranges for the current task (via
-    /// `cx.waker()`) to receive a notification when the object becomes
-    /// readable or is closed.
+    /// If no data is available for reading, the method returns `Poll::Pending`
+    /// and arranges for the current task (via `cx.waker()`) to receive a
+    /// notification when the object becomes readable or is closed.
     fn poll_read(
         self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         buf: &mut ReadBuf<'_>,
     ) -> Poll<io::Result<()>>;
-
-    /// Pulls some bytes from this source into the specified `BufMut`, returning
-    /// how many bytes were read.
-    ///
-    /// The `buf` provided will have bytes read into it and the internal cursor
-    /// will be advanced if any bytes were read. Note that this method typically
-    /// will not reallocate the buffer provided.
-    fn poll_read_buf<B: BufMut>(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &mut B,
-    ) -> Poll<io::Result<usize>>
-    where
-        Self: Sized,
-    {
-        if !buf.has_remaining_mut() {
-            return Poll::Ready(Ok(0));
-        }
-
-        let mut b = ReadBuf::uninit(buf.bytes_mut());
-
-        ready!(self.poll_read(cx, &mut b))?;
-        let n = b.filled().len();
-
-        // Safety: we can assume `n` bytes were read, since they are in`filled`.
-        unsafe {
-            buf.advance_mut(n);
-        }
-        Poll::Ready(Ok(n))
-    }
 }
 
 macro_rules! deref_async_read {
@@ -128,7 +99,7 @@ impl AsyncRead for &[u8] {
     ) -> Poll<io::Result<()>> {
         let amt = std::cmp::min(self.len(), buf.remaining());
         let (a, b) = self.split_at(amt);
-        buf.append(a);
+        buf.put_slice(a);
         *self = b;
         Poll::Ready(Ok(()))
     }
@@ -152,7 +123,7 @@ impl<T: AsRef<[u8]> + Unpin> AsyncRead for io::Cursor<T> {
         let amt = std::cmp::min(slice.len() - start, buf.remaining());
         // Add won't overflow because of pos check above.
         let end = start + amt;
-        buf.append(&slice[start..end]);
+        buf.put_slice(&slice[start..end]);
         self.set_position(end as u64);
 
         Poll::Ready(Ok(()))

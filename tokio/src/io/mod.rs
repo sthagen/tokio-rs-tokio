@@ -201,19 +201,34 @@ pub use self::read_buf::ReadBuf;
 
 // Re-export some types from `std::io` so that users don't have to deal
 // with conflicts when `use`ing `tokio::io` and `std::io`.
+#[doc(no_inline)]
 pub use std::io::{Error, ErrorKind, Result, SeekFrom};
 
-cfg_io_driver! {
+cfg_io_driver_impl! {
     pub(crate) mod driver;
 
-    mod poll_evented;
-    pub use poll_evented::PollEvented;
+    cfg_net! {
+        pub use driver::{Interest, Ready};
+    }
 
-    mod registration;
-    pub use registration::Registration;
+    mod poll_evented;
+
+    #[cfg(not(loom))]
+    pub(crate) use poll_evented::PollEvented;
+}
+
+cfg_net_unix! {
+    mod async_fd;
+
+    pub mod unix {
+        //! Asynchronous IO structures specific to Unix-like operating systems.
+        pub use super::async_fd::{AsyncFd, AsyncFdReadyGuard};
+    }
 }
 
 cfg_io_std! {
+    mod stdio_common;
+
     mod stderr;
     pub use stderr::{stderr, Stderr};
 
@@ -229,17 +244,11 @@ cfg_io_util! {
     pub use split::{split, ReadHalf, WriteHalf};
 
     pub(crate) mod seek;
-    pub use self::seek::Seek;
-
     pub(crate) mod util;
     pub use util::{
-        copy, duplex, empty, repeat, sink, AsyncBufReadExt, AsyncReadExt, AsyncSeekExt, AsyncWriteExt,
-        BufReader, BufStream, BufWriter, DuplexStream, Copy, Empty, Lines, Repeat, Sink, Split, Take,
+        copy, copy_buf, duplex, empty, repeat, sink, AsyncBufReadExt, AsyncReadExt, AsyncSeekExt, AsyncWriteExt,
+        BufReader, BufStream, BufWriter, DuplexStream, Empty, Lines, Repeat, Sink, Split, Take,
     };
-
-    cfg_stream! {
-        pub use util::{stream_reader, StreamReader};
-    }
 }
 
 cfg_not_io_util! {
@@ -252,7 +261,7 @@ cfg_io_blocking! {
     /// Types in this module can be mocked out in tests.
     mod sys {
         // TODO: don't rename
-        pub(crate) use crate::runtime::spawn_blocking as run;
-        pub(crate) use crate::task::JoinHandle as Blocking;
+        pub(crate) use crate::blocking::spawn_blocking as run;
+        pub(crate) use crate::blocking::JoinHandle as Blocking;
     }
 }

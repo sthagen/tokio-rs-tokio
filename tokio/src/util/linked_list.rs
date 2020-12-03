@@ -1,3 +1,5 @@
+#![cfg_attr(not(feature = "full"), allow(dead_code))]
+
 //! An intrusive double linked list of data
 //!
 //! The data structure supports tracking pinned nodes. Most of the data
@@ -72,7 +74,6 @@ unsafe impl<T: Sync> Sync for Pointers<T> {}
 
 impl<L, T> LinkedList<L, T> {
     /// Creates an empty linked list.
-    #[allow(dead_code)] // NOTE: This will get removed with: https://github.com/tokio-rs/tokio/pull/2790
     pub(crate) const fn new() -> LinkedList<L, T> {
         LinkedList {
             head: None,
@@ -181,20 +182,28 @@ impl<L: Link> fmt::Debug for LinkedList<L, L::Target> {
     }
 }
 
-cfg_sync! {
-    impl<L: Link> LinkedList<L, L::Target> {
-        pub(crate) fn last(&self) -> Option<&L::Target> {
-            let tail = self.tail.as_ref()?;
-            unsafe {
-                Some(&*tail.as_ptr())
-            }
-        }
+#[cfg(any(
+    feature = "fs",
+    all(unix, feature = "process"),
+    feature = "signal",
+    feature = "sync",
+))]
+impl<L: Link> LinkedList<L, L::Target> {
+    pub(crate) fn last(&self) -> Option<&L::Target> {
+        let tail = self.tail.as_ref()?;
+        unsafe { Some(&*tail.as_ptr()) }
+    }
+}
+
+impl<L: Link> Default for LinkedList<L, L::Target> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
 // ===== impl Iter =====
 
-cfg_rt_threaded! {
+cfg_rt_multi_thread! {
     pub(crate) struct Iter<'a, T: Link> {
         curr: Option<NonNull<T::Target>>,
         _p: core::marker::PhantomData<&'a T>,
@@ -219,6 +228,52 @@ cfg_rt_threaded! {
 
             // safety: the value is still owned by the linked list.
             Some(unsafe { &*curr.as_ptr() })
+        }
+    }
+}
+
+// ===== impl DrainFilter =====
+
+cfg_io_readiness! {
+    pub(crate) struct DrainFilter<'a, T: Link, F> {
+        list: &'a mut LinkedList<T, T::Target>,
+        filter: F,
+        curr: Option<NonNull<T::Target>>,
+    }
+
+    impl<T: Link> LinkedList<T, T::Target> {
+        pub(crate) fn drain_filter<F>(&mut self, filter: F) -> DrainFilter<'_, T, F>
+        where
+            F: FnMut(&mut T::Target) -> bool,
+        {
+            let curr = self.head;
+            DrainFilter {
+                curr,
+                filter,
+                list: self,
+            }
+        }
+    }
+
+    impl<'a, T, F> Iterator for DrainFilter<'a, T, F>
+    where
+        T: Link,
+        F: FnMut(&mut T::Target) -> bool,
+    {
+        type Item = T::Handle;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            while let Some(curr) = self.curr {
+                // safety: the pointer references data contained by the list
+                self.curr = unsafe { T::pointers(curr).as_ref() }.next;
+
+                // safety: the value is still owned by the linked list.
+                if (self.filter)(unsafe { &mut *curr.as_ptr() }) {
+                    return unsafe { self.list.remove(curr) };
+                }
+            }
+
+            None
         }
     }
 }

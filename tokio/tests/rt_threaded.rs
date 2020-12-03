@@ -18,10 +18,9 @@ use std::task::{Context, Poll};
 #[test]
 fn single_thread() {
     // No panic when starting a runtime w/ a single thread
-    let _ = runtime::Builder::new()
-        .threaded_scheduler()
+    let _ = runtime::Builder::new_multi_thread()
         .enable_all()
-        .core_threads(1)
+        .worker_threads(1)
         .build();
 }
 
@@ -70,7 +69,7 @@ fn many_multishot_futures() {
             let (start_tx, mut chain_rx) = tokio::sync::mpsc::channel(10);
 
             for _ in 0..CHAIN {
-                let (mut next_tx, next_rx) = tokio::sync::mpsc::channel(10);
+                let (next_tx, next_rx) = tokio::sync::mpsc::channel(10);
 
                 // Forward all the messages
                 rt.spawn(async move {
@@ -83,8 +82,8 @@ fn many_multishot_futures() {
             }
 
             // This final task cycles if needed
-            let (mut final_tx, final_rx) = tokio::sync::mpsc::channel(10);
-            let mut cycle_tx = start_tx.clone();
+            let (final_tx, final_rx) = tokio::sync::mpsc::channel(10);
+            let cycle_tx = start_tx.clone();
             let mut rem = CYCLES;
 
             rt.spawn(async move {
@@ -107,7 +106,7 @@ fn many_multishot_futures() {
 
         {
             rt.block_on(async move {
-                for mut start_tx in start_txs {
+                for start_tx in start_txs {
                     start_tx.send("ping").await.unwrap();
                 }
 
@@ -139,7 +138,7 @@ fn spawn_shutdown() {
 }
 
 async fn client_server(tx: mpsc::Sender<()>) {
-    let mut server = assert_ok!(TcpListener::bind("127.0.0.1:0").await);
+    let server = assert_ok!(TcpListener::bind("127.0.0.1:0").await);
 
     // Get the assigned address
     let addr = assert_ok!(server.local_addr());
@@ -188,8 +187,7 @@ fn drop_threadpool_drops_futures() {
         let a = num_inc.clone();
         let b = num_dec.clone();
 
-        let rt = runtime::Builder::new()
-            .threaded_scheduler()
+        let rt = runtime::Builder::new_multi_thread()
             .enable_all()
             .on_thread_start(move || {
                 a.fetch_add(1, Relaxed);
@@ -228,8 +226,7 @@ fn start_stop_callbacks_called() {
 
     let after_inner = after_start.clone();
     let before_inner = before_stop.clone();
-    let rt = tokio::runtime::Builder::new()
-        .threaded_scheduler()
+    let rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .on_thread_start(move || {
             after_inner.clone().fetch_add(1, Ordering::Relaxed);
@@ -329,8 +326,7 @@ fn multi_threadpool() {
 // channel yields occasionally even if there are values ready to receive.
 #[test]
 fn coop_and_block_in_place() {
-    let rt = tokio::runtime::Builder::new()
-        .threaded_scheduler()
+    let rt = tokio::runtime::Builder::new_multi_thread()
         // Setting max threads to 1 prevents another thread from claiming the
         // runtime worker yielded as part of `block_in_place` and guarantees the
         // same thread will reclaim the worker at the end of the
@@ -340,7 +336,7 @@ fn coop_and_block_in_place() {
         .unwrap();
 
     rt.block_on(async move {
-        let (mut tx, mut rx) = tokio::sync::mpsc::channel(1024);
+        let (tx, mut rx) = tokio::sync::mpsc::channel(1024);
 
         // Fill the channel
         for _ in 0..1024 {
@@ -380,8 +376,7 @@ fn coop_and_block_in_place() {
 // Testing this does not panic
 #[test]
 fn max_threads() {
-    let _rt = tokio::runtime::Builder::new()
-        .threaded_scheduler()
+    let _rt = tokio::runtime::Builder::new_multi_thread()
         .max_threads(1)
         .build()
         .unwrap();

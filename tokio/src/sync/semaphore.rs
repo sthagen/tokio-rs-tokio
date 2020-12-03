@@ -1,7 +1,7 @@
 use super::batch_semaphore as ll; // low level implementation
 use std::sync::Arc;
 
-/// Counting semaphore performing asynchronous permit aquisition.
+/// Counting semaphore performing asynchronous permit acquisition.
 ///
 /// A semaphore maintains a set of permits. Permits are used to synchronize
 /// access to a shared resource. A semaphore differs from a mutex in that it
@@ -27,7 +27,7 @@ pub struct Semaphore {
 #[derive(Debug)]
 pub struct SemaphorePermit<'a> {
     sem: &'a Semaphore,
-    permits: u16,
+    permits: u32,
 }
 
 /// An owned permit from the semaphore.
@@ -39,7 +39,7 @@ pub struct SemaphorePermit<'a> {
 #[derive(Debug)]
 pub struct OwnedSemaphorePermit {
     sem: Arc<Semaphore>,
-    permits: u16,
+    permits: u32,
 }
 
 /// Error returned from the [`Semaphore::try_acquire`] function.
@@ -74,6 +74,15 @@ impl Semaphore {
         }
     }
 
+    /// Creates a new semaphore with the initial number of permits.
+    #[cfg(all(feature = "parking_lot", not(all(loom, test))))]
+    #[cfg_attr(docsrs, doc(cfg(feature = "parking_lot")))]
+    pub const fn const_new(permits: usize) -> Self {
+        Self {
+            ll_sem: ll::Semaphore::const_new(permits),
+        }
+    }
+
     /// Returns the current number of available permits.
     pub fn available_permits(&self) -> usize {
         self.ll_sem.available_permits()
@@ -95,12 +104,32 @@ impl Semaphore {
         }
     }
 
+    /// Acquires `n` permits from the semaphore
+    pub async fn acquire_many(&self, n: u32) -> SemaphorePermit<'_> {
+        self.ll_sem.acquire(n).await.unwrap();
+        SemaphorePermit {
+            sem: &self,
+            permits: n,
+        }
+    }
+
     /// Tries to acquire a permit from the semaphore.
     pub fn try_acquire(&self) -> Result<SemaphorePermit<'_>, TryAcquireError> {
         match self.ll_sem.try_acquire(1) {
             Ok(_) => Ok(SemaphorePermit {
                 sem: self,
                 permits: 1,
+            }),
+            Err(_) => Err(TryAcquireError(())),
+        }
+    }
+
+    /// Tries to acquire `n` permits from the semaphore.
+    pub fn try_acquire_many(&self, n: u32) -> Result<SemaphorePermit<'_>, TryAcquireError> {
+        match self.ll_sem.try_acquire(n) {
+            Ok(_) => Ok(SemaphorePermit {
+                sem: self,
+                permits: n,
             }),
             Err(_) => Err(TryAcquireError(())),
         }
@@ -114,7 +143,7 @@ impl Semaphore {
     pub async fn acquire_owned(self: Arc<Self>) -> OwnedSemaphorePermit {
         self.ll_sem.acquire(1).await.unwrap();
         OwnedSemaphorePermit {
-            sem: self.clone(),
+            sem: self,
             permits: 1,
         }
     }
@@ -127,7 +156,7 @@ impl Semaphore {
     pub fn try_acquire_owned(self: Arc<Self>) -> Result<OwnedSemaphorePermit, TryAcquireError> {
         match self.ll_sem.try_acquire(1) {
             Ok(_) => Ok(OwnedSemaphorePermit {
-                sem: self.clone(),
+                sem: self,
                 permits: 1,
             }),
             Err(_) => Err(TryAcquireError(())),

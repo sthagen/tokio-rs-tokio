@@ -11,7 +11,7 @@ const MAX_READS: usize = 32;
 #[cfg(loom)]
 const MAX_READS: usize = 10;
 
-/// An asynchronous reader-writer lock
+/// An asynchronous reader-writer lock.
 ///
 /// This type of lock allows a number of readers or at most one writer at any
 /// point in time. The write portion of this lock typically allows modification
@@ -344,6 +344,57 @@ impl<'a, T: ?Sized> RwLockWriteGuard<'a, T> {
             marker: marker::PhantomData,
         })
     }
+
+    /// Atomically downgrades a write lock into a read lock without allowing
+    /// any writers to take exclusive access of the lock in the meantime.
+    ///
+    /// **Note:** This won't *necessarily* allow any additional readers to acquire
+    /// locks, since [`RwLock`] is fair and it is possible that a writer is next
+    /// in line.
+    ///
+    /// Returns an RAII guard which will drop the read access of this rwlock
+    /// when dropped.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use tokio::sync::RwLock;
+    /// # use std::sync::Arc;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let lock = Arc::new(RwLock::new(1));
+    ///
+    /// let n = lock.write().await;
+    ///   
+    /// let cloned_lock = lock.clone();
+    /// let handle = tokio::spawn(async move {
+    ///     *cloned_lock.write().await = 2;
+    /// });
+    ///
+    /// let n = n.downgrade();
+    /// assert_eq!(*n, 1, "downgrade is atomic");
+    ///
+    /// drop(n);
+    /// handle.await.unwrap();
+    /// assert_eq!(*lock.read().await, 2, "second writer obtained write lock");
+    /// # }
+    /// ```
+    ///
+    /// [`RwLock`]: struct@RwLock
+    pub fn downgrade(self) -> RwLockReadGuard<'a, T> {
+        let RwLockWriteGuard { s, data, .. } = self;
+
+        // Release all but one of the permits held by the write guard
+        s.release(MAX_READS - 1);
+        // NB: Forget to avoid drop impl from being called.
+        mem::forget(self);
+        RwLockReadGuard {
+            s,
+            data,
+            marker: marker::PhantomData,
+        }
+    }
 }
 
 impl<'a, T: ?Sized> fmt::Debug for RwLockWriteGuard<'a, T>
@@ -433,6 +484,27 @@ impl<T: ?Sized> RwLock<T> {
         }
     }
 
+    /// Creates a new instance of an `RwLock<T>` which is unlocked.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use tokio::sync::RwLock;
+    ///
+    /// static LOCK: RwLock<i32> = RwLock::const_new(5);
+    /// ```
+    #[cfg(all(feature = "parking_lot", not(all(loom, test))))]
+    #[cfg_attr(docsrs, doc(cfg(feature = "parking_lot")))]
+    pub const fn const_new(value: T) -> RwLock<T>
+    where
+        T: Sized,
+    {
+        RwLock {
+            c: UnsafeCell::new(value),
+            s: Semaphore::const_new(MAX_READS),
+        }
+    }
+
     /// Locks this rwlock with shared read access, causing the current task
     /// to yield until the lock has been acquired.
     ///
@@ -509,6 +581,30 @@ impl<T: ?Sized> RwLock<T> {
             s: &self.s,
             data: self.c.get(),
             marker: marker::PhantomData,
+        }
+    }
+
+    /// Returns a mutable reference to the underlying data.
+    ///
+    /// Since this call borrows the `RwLock` mutably, no actual locking needs to
+    /// take place -- the mutable borrow statically guarantees no locks exist.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use tokio::sync::RwLock;
+    ///
+    /// fn main() {
+    ///     let mut lock = RwLock::new(1);
+    ///
+    ///     let n = lock.get_mut();
+    ///     *n = 2;
+    /// }
+    /// ```
+    pub fn get_mut(&mut self) -> &mut T {
+        unsafe {
+            // Safety: This is https://github.com/rust-lang/rust/pull/76936
+            &mut *self.c.get()
         }
     }
 

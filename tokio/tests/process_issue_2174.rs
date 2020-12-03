@@ -36,11 +36,10 @@ async fn issue_2174() {
     });
 
     // Sleep enough time so that the child process's stdin's buffer fills.
-    time::delay_for(Duration::from_secs(1)).await;
+    time::sleep(Duration::from_secs(1)).await;
 
     // Kill the child process.
-    child.kill().unwrap();
-    let _ = child.await;
+    child.kill().await.unwrap();
 
     assert_err!(handle.await);
 }

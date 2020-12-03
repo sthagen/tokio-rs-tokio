@@ -1,3 +1,17 @@
+# 0.3.1 (October 25, 2020)
+
+### Fixed
+
+- fix incorrect docs regarding `max_threads` option ([#3038])
+
+# 0.3.0 (October 15, 2020)
+
+- Track `tokio` 0.3 release.
+
+### Changed
+- options are renamed to track `tokio` runtime builder fn names.
+- `#[tokio::main]` macro requires `rt-multi-thread` when no `flavor` is specified.
+
 # 0.2.5 (February 27, 2019)
 
 ### Fixed
@@ -30,9 +44,10 @@
 
 - Initial release
 
-[#2225]: https://github.com/tokio-rs/tokio/pull/2225
-[#2177]: https://github.com/tokio-rs/tokio/pull/2177
-[#2152]: https://github.com/tokio-rs/tokio/pull/2152
-[#2038]: https://github.com/tokio-rs/tokio/pull/2038
-[#2022]: https://github.com/tokio-rs/tokio/pull/2022
 [#1954]: https://github.com/tokio-rs/tokio/pull/1954
+[#2022]: https://github.com/tokio-rs/tokio/pull/2022
+[#2038]: https://github.com/tokio-rs/tokio/pull/2038
+[#2152]: https://github.com/tokio-rs/tokio/pull/2152
+[#2177]: https://github.com/tokio-rs/tokio/pull/2177
+[#2225]: https://github.com/tokio-rs/tokio/pull/2225
+[#3038]: https://github.com/tokio-rs/tokio/pull/3038

@@ -1,3 +1,144 @@
+# 0.3.5 (November 30, 2020)
+
+### Fixed
+- rt: fix `shutdown_timeout(0)` (#3196).
+- time: fixed race condition with small sleeps (#3069).
+
+### Added
+- io: `AsyncFd::with_interest()` (#3167).
+- signal: `CtrlC` stream on windows (#3186).
+
+# 0.3.4 (November 18, 2020)
+
+### Fixed
+- stream: `StreamMap` `Default` impl bound (#3093).
+- io: `AsyncFd::into_inner()` should deregister the FD (#3104).
+
+### Changed
+- meta: `parking_lot` feature enabled with `full` (#3119).
+
+### Added
+- io: `AsyncWrite` vectored writes (#3149).
+- net: TCP/UDP readiness and non-blocking ops (#3130, #2743, #3138).
+- net: TCP socket option (linger, send/recv buf size) (#3145, #3143).
+- net: PID field in `UCred` with solaris/illumos (#3085).
+- rt: `runtime::Handle` allows spawning onto a runtime (#3079).
+- sync: `Notify::notify_waiters()` (#3098).
+- sync: `acquire_many()`, `try_acquire_many()` to `Semaphore` (#3067).
+
+# 0.3.3 (November 2, 2020)
+
+Fixes a soundness hole by adding a missing `Send` bound to
+`Runtime::spawn_blocking()`.
+
+### Fixed
+- rt: include missing `Send`, fixing soundness hole (#3089).
+- tracing: avoid huge trace span names (#3074).
+
+### Added
+- net: `TcpSocket::reuseport()`, `TcpSocket::set_reuseport()` (#3083).
+- net: `TcpSocket::reuseaddr()` (#3093).
+- net: `TcpSocket::local_addr()` (#3093).
+- net: add pid to `UCred` (#2633).
+
+# 0.3.2 (October 27, 2020)
+
+Adds `AsyncFd` as a replacement for v0.2's `PollEvented`.
+
+### Fixed
+- io: fix a potential deadlock when shutting down the I/O driver (#2903).
+- sync: `RwLockWriteGuard::downgrade()` bug (#2957).
+
+### Added
+- io: `AsyncFd` for receiving readiness events on raw FDs (#2903).
+- net: `poll_*` function on `UdpSocket` (#2981).
+- net: `UdpSocket::take_error()` (#3051).
+- sync: `oneshot::Sender::poll_closed()` (#3032).
+
+# 0.3.1 (October 21, 2020)
+
+This release fixes an use-after-free in the IO driver. Additionally, the `read_buf`
+and `write_buf` methods have been added back to the IO traits, as the bytes crate
+is now on track to reach version 1.0 together with Tokio.
+
+### Fixed
+- net: fix use-after-free (#3019).
+- fs: ensure buffered data is written on shutdown (#3009).
+
+### Added
+- io: `copy_buf()` (#2884).
+- io: `AsyncReadExt::read_buf()`, `AsyncReadExt::write_buf()` for working with
+  `Buf`/`BufMut` (#3003).
+- rt: `Runtime::spawn_blocking()` (#2980).
+- sync: `watch::Sender::is_closed()` (#2991).
+
+# 0.3.0 (October 15, 2020)
+
+This represents a 1.0 beta release. APIs are polished and future-proofed. APIs
+not included for 1.0 stabilization have been removed.
+
+Biggest changes are:
+
+- I/O driver internal rewrite. The windows implementation includes significant
+  changes.
+- Runtime API is polished, especially with how it interacts with feature flag
+  combinations.
+- Feature flags are simplified
+  - `rt-core` and `rt-util` are combined to `rt`
+  - `rt-threaded` is renamed to `rt-multi-thread` to match builder API
+  - `tcp`, `udp`, `uds`, `dns` are combied to `net`.
+  - `parking_lot` is included with `full`
+
+### Changes
+- meta: Minimum supported Rust version is now 1.45.
+- io: `AsyncRead` trait now takes `ReadBuf` in order to safely handle reading
+  into uninitialized memory (#2758).
+- io: Internal I/O driver storage is now able to compact (#2757).
+- rt: `Runtime::block_on` now takes `&self` (#2782).
+- sync: `watch` reworked to decouple receiving a change notification from
+  receiving the value (#2814, #2806).
+- sync: `Notify::notify` is renamed to `notify_one` (#2822).
+- process: `Child::kill` is now an `async fn` that cleans zombies (#2823).
+- sync: use `const fn` constructors as possible (#2833, #2790)
+- signal: reduce cross-thread notification (#2835).
+- net: tcp,udp,uds types support operations with `&self` (#2828, #2919, #2934).
+- sync: blocking `mpsc` channel supports `send` with `&self` (#2861).
+- time: rename `delay_for` and `delay_until` to `sleep` and `sleep_until` (#2826).
+- io: upgrade to `mio` 0.7 (#2893).
+- io: `AsyncSeek` trait is tweaked (#2885).
+- fs: `File` operations take `&self` (#2930).
+- rt: runtime API, and `#[tokio::main]` macro polish (#2876)
+- rt: `Runtime::enter` uses an RAII guard instead of a closure (#2954).
+- net: the `from_std` function on all sockets no longer sets socket into non-blocking mode (#2893)
+
+### Added
+- sync: `map` function to lock guards (#2445).
+- sync: `blocking_recv` and `blocking_send` fns to `mpsc` for use outside of Tokio (#2685).
+- rt: `Builder::thread_name_fn` for configuring thread names (#1921).
+- fs: impl `FromRawFd` and `FromRawHandle` for `File` (#2792).
+- process: `Child::wait` and `Child::try_wait` (#2796).
+- rt: support configuring thread keep-alive duration (#2809).
+- rt: `task::JoinHandle::abort` forcibly cancels a spawned task (#2474).
+- sync: `RwLock` write guard to read guard downgrading (#2733).
+- net: add `poll_*` functions that take `&self` to all net types (#2845)
+- sync: `get_mut()` for `Mutex`, `RwLock` (#2856).
+- sync: `mpsc::Sender::closed()` waits for `Receiver` half to close (#2840).
+- sync: `mpsc::Sender::is_closed()` returns true if `Receiver` half is closed (#2726).
+- stream: `iter` and `iter_mut` to `StreamMap` (#2890).
+- net: implement `AsRawSocket` on windows (#2911).
+- net: `TcpSocket` creates a socket without binding or listening (#2920).
+
+### Removed
+- io: vectored ops are removed from `AsyncRead`, `AsyncWrite` traits (#2882).
+- io: `mio` is removed from the public API. `PollEvented` and` Registration` are
+  removed (#2893).
+- io: remove `bytes` from public API. `Buf` and `BufMut` implementation are
+  removed (#2908).
+- time: `DelayQueue` is moved to `tokio-util` (#2897).
+
+### Fixed
+- io: `stdout` and `stderr` buffering on windows (#2734).
+
 # 0.2.22 (July 21, 2020)
 
 ### Fixes
