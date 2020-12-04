@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1607070967280,
+  "lastUpdate": 1607071032926,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -181,6 +181,90 @@ window.BENCHMARK_DATA = {
             "name": "uncontented_unbounded",
             "value": 792616,
             "range": "± 7406",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "80868e8400b351f25d4711d94d832a52da05e391",
+          "message": "Merge pull request #26 from tokio-rs/master\n\nSync Fork from Upstream Repo",
+          "timestamp": "2020-12-04T08:58:01+01:00",
+          "tree_id": "8dab5d17383a5f63f7554ec009cf6e1408c46d96",
+          "url": "https://github.com/sthagen/tokio/commit/80868e8400b351f25d4711d94d832a52da05e391"
+        },
+        "date": 1607071032135,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "contention_bounded",
+            "value": 7376882,
+            "range": "± 3319071",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "contention_bounded_full",
+            "value": 6840706,
+            "range": "± 1810014",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "contention_unbounded",
+            "value": 6531918,
+            "range": "± 2807341",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "create_100_000_medium",
+            "value": 815,
+            "range": "± 58",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "create_100_medium",
+            "value": 811,
+            "range": "± 64",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "create_1_medium",
+            "value": 808,
+            "range": "± 64",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "send_large",
+            "value": 66270,
+            "range": "± 9822",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "send_medium",
+            "value": 1131,
+            "range": "± 217",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "uncontented_bounded",
+            "value": 1121360,
+            "range": "± 155238",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "uncontented_unbounded",
+            "value": 807494,
+            "range": "± 71329",
             "unit": "ns/iter"
           }
         ]
