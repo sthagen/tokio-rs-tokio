@@ -1,4 +1,4 @@
-#![doc(html_root_url = "https://docs.rs/tokio/0.3.5")]
+#![doc(html_root_url = "https://docs.rs/tokio/1.0.0")]
 #![allow(
     clippy::cognitive_complexity,
     clippy::large_enum_variant,
@@ -239,7 +239,7 @@
 //! [`std::io`]: std::io
 //! [`tokio::net`]: crate::net
 //! [TCP]: crate::net::tcp
-//! [UDP]: crate::net::udp
+//! [UDP]: crate::net::UdpSocket
 //! [UDS]: crate::net::unix
 //! [`tokio::fs`]: crate::fs
 //! [`std::fs`]: std::fs
