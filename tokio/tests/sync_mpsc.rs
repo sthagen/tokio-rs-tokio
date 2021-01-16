@@ -5,13 +5,17 @@
 use std::thread;
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc;
-use tokio::sync::mpsc::error::{TryRecvError, TrySendError};
+use tokio::sync::mpsc::error::TrySendError;
 use tokio_test::task;
 use tokio_test::{
     assert_err, assert_ok, assert_pending, assert_ready, assert_ready_err, assert_ready_ok,
 };
 
 use std::sync::Arc;
+
+mod support {
+    pub(crate) mod mpsc_stream;
+}
 
 trait AssertSend: Send {}
 impl AssertSend for mpsc::Sender<i32> {}
@@ -80,9 +84,10 @@ async fn reserve_disarm() {
 
 #[tokio::test]
 async fn send_recv_stream_with_buffer() {
-    use tokio::stream::StreamExt;
+    use tokio_stream::StreamExt;
 
-    let (tx, mut rx) = mpsc::channel::<i32>(16);
+    let (tx, rx) = support::mpsc_stream::channel_stream::<i32>(16);
+    let mut rx = Box::pin(rx);
 
     tokio::spawn(async move {
         assert_ok!(tx.send(1).await);
@@ -178,9 +183,11 @@ async fn async_send_recv_unbounded() {
 
 #[tokio::test]
 async fn send_recv_stream_unbounded() {
-    use tokio::stream::StreamExt;
+    use tokio_stream::StreamExt;
 
-    let (tx, mut rx) = mpsc::unbounded_channel::<i32>();
+    let (tx, rx) = support::mpsc_stream::unbounded_channel_stream::<i32>();
+
+    let mut rx = Box::pin(rx);
 
     tokio::spawn(async move {
         assert_ok!(tx.send(1));
@@ -321,6 +328,29 @@ async fn try_send_fail() {
 }
 
 #[tokio::test]
+async fn try_reserve_fails() {
+    let (tx, mut rx) = mpsc::channel(1);
+
+    let permit = tx.try_reserve().unwrap();
+
+    // This should fail
+    match assert_err!(tx.try_reserve()) {
+        TrySendError::Full(()) => {}
+        _ => panic!(),
+    }
+
+    permit.send("foo");
+
+    assert_eq!(rx.recv().await, Some("foo"));
+
+    // Dropping permit releases the slot.
+    let permit = tx.try_reserve().unwrap();
+    drop(permit);
+
+    let _permit = tx.try_reserve().unwrap();
+}
+
+#[tokio::test]
 async fn drop_permit_releases_permit() {
     // poll_ready reserves capacity, ensure that the capacity is released if tx
     // is dropped w/o sending a value.
@@ -383,44 +413,6 @@ fn unconsumed_messages_are_dropped() {
     drop((tx, rx));
 
     assert_eq!(1, Arc::strong_count(&msg));
-}
-
-#[test]
-fn try_recv() {
-    let (tx, mut rx) = mpsc::channel(1);
-    match rx.try_recv() {
-        Err(TryRecvError::Empty) => {}
-        _ => panic!(),
-    }
-    tx.try_send(42).unwrap();
-    match rx.try_recv() {
-        Ok(42) => {}
-        _ => panic!(),
-    }
-    drop(tx);
-    match rx.try_recv() {
-        Err(TryRecvError::Closed) => {}
-        _ => panic!(),
-    }
-}
-
-#[test]
-fn try_recv_unbounded() {
-    let (tx, mut rx) = mpsc::unbounded_channel();
-    match rx.try_recv() {
-        Err(TryRecvError::Empty) => {}
-        _ => panic!(),
-    }
-    tx.send(42).unwrap();
-    match rx.try_recv() {
-        Ok(42) => {}
-        _ => panic!(),
-    }
-    drop(tx);
-    match rx.try_recv() {
-        Err(TryRecvError::Closed) => {}
-        _ => panic!(),
-    }
 }
 
 #[test]
