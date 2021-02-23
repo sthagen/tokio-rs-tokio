@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1614062099540,
+  "lastUpdate": 1614118073763,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -431,6 +431,54 @@ window.BENCHMARK_DATA = {
             "name": "yield_many",
             "value": 17508131,
             "range": "± 3063311",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "57c1be62452fac35ad634d90f21c98c594a0f855",
+          "message": "Merge pull request #34 from tokio-rs/master\n\nSync Fork from Upstream Repo",
+          "timestamp": "2021-02-23T21:49:48+01:00",
+          "tree_id": "4030910d8927fa26d719c806b7470c4280dde8a9",
+          "url": "https://github.com/sthagen/tokio/commit/57c1be62452fac35ad634d90f21c98c594a0f855"
+        },
+        "date": 1614118072981,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "chained_spawn",
+            "value": 174860,
+            "range": "± 13816",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ping_pong",
+            "value": 648884,
+            "range": "± 50048",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "spawn_many",
+            "value": 4965551,
+            "range": "± 789892",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "yield_many",
+            "value": 19477203,
+            "range": "± 2468142",
             "unit": "ns/iter"
           }
         ]
