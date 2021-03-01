@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1614621436839,
+  "lastUpdate": 1614621569334,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -1995,6 +1995,60 @@ window.BENCHMARK_DATA = {
             "name": "uncontended_concurrent_single",
             "value": 1012,
             "range": "± 119",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ec911bf6759ddcea15f0b214384b8f04c3df7758",
+          "message": "Merge pull request #35 from tokio-rs/master\n\nSync Fork from Upstream Repo",
+          "timestamp": "2021-03-01T17:42:07+01:00",
+          "tree_id": "2f04bde202c6f05cf5c668e416c96531cc679fb8",
+          "url": "https://github.com/sthagen/tokio/commit/ec911bf6759ddcea15f0b214384b8f04c3df7758"
+        },
+        "date": 1614621568507,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "contended_concurrent_multi",
+            "value": 16935,
+            "range": "± 16082",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "contended_concurrent_single",
+            "value": 1077,
+            "range": "± 336",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "uncontended",
+            "value": 585,
+            "range": "± 141",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "uncontended_concurrent_multi",
+            "value": 16017,
+            "range": "± 9080",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "uncontended_concurrent_single",
+            "value": 1056,
+            "range": "± 134",
             "unit": "ns/iter"
           }
         ]
