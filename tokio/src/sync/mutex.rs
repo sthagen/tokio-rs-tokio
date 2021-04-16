@@ -10,23 +10,28 @@ use std::sync::Arc;
 
 /// An asynchronous `Mutex`-like type.
 ///
-/// This type acts similarly to an asynchronous [`std::sync::Mutex`], with one
-/// major difference: [`lock`] does not block and the lock guard can be held
-/// across await points.
+/// This type acts similarly to [`std::sync::Mutex`], with two major
+/// differences: [`lock`] is an async method so does not block, and the lock
+/// guard is designed to be held across `.await` points.
 ///
 /// # Which kind of mutex should you use?
 ///
 /// Contrary to popular belief, it is ok and often preferred to use the ordinary
-/// [`Mutex`][std] from the standard library in asynchronous code. This section
-/// will help you decide on which kind of mutex you should use.
+/// [`Mutex`][std] from the standard library in asynchronous code.
 ///
-/// The primary use case of the async mutex is to provide shared mutable access
-/// to IO resources such as a database connection. If the data stored behind the
-/// mutex is just data, it is often better to use a blocking mutex such as the
-/// one in the standard library or [`parking_lot`]. This is because the feature
-/// that the async mutex offers over the blocking mutex is that it is possible
-/// to keep the mutex locked across an `.await` point, which is rarely necessary
-/// for data.
+/// The feature that the async mutex offers over the blocking mutex is the
+/// ability to keep it locked across an `.await` point. This makes the async
+/// mutex more expensive than the blocking mutex, so the blocking mutex should
+/// be preferred in the cases where it can be used. The primary use case for the
+/// async mutex is to provide shared mutable access to IO resources such as a
+/// database connection. If the value behind the mutex is just data, it's
+/// usually appropriate to use a blocking mutex such as the one in the standard
+/// library or [`parking_lot`].
+///
+/// Note that, although the compiler will not prevent the std `Mutex` from holding
+/// its guard across `.await` points in situations where the task is not movable
+/// between threads, this virtually never leads to correct concurrent code in
+/// practice as it can easily lead to deadlocks.
 ///
 /// A common pattern is to wrap the `Arc<Mutex<...>>` in a struct that provides
 /// non-async methods for performing operations on the data within, and only
@@ -71,13 +76,13 @@ use std::sync::Arc;
 /// async fn main() {
 ///     let count = Arc::new(Mutex::new(0));
 ///
-///     for _ in 0..5 {
+///     for i in 0..5 {
 ///         let my_count = Arc::clone(&count);
 ///         tokio::spawn(async move {
-///             for _ in 0..10 {
+///             for j in 0..10 {
 ///                 let mut lock = my_count.lock().await;
 ///                 *lock += 1;
-///                 println!("{}", lock);
+///                 println!("{} {} {}", i, j, lock);
 ///             }
 ///         });
 ///     }
@@ -100,9 +105,10 @@ use std::sync::Arc;
 /// Tokio's Mutex works in a simple FIFO (first in, first out) style where all
 /// calls to [`lock`] complete in the order they were performed. In that way the
 /// Mutex is "fair" and predictable in how it distributes the locks to inner
-/// data. This is why the output of the program above is an in-order count to
-/// 50. Locks are released and reacquired after every iteration, so basically,
+/// data. Locks are released and reacquired after every iteration, so basically,
 /// each thread goes to the back of the line after it increments the value once.
+/// Note that there's some unpredictability to the timing between when the
+/// threads are started, but once they are going they alternate predictably.
 /// Finally, since there is only a single valid lock at any given time, there is
 /// no possibility of a race condition when mutating the inner value.
 ///
@@ -122,7 +128,8 @@ pub struct Mutex<T: ?Sized> {
     c: UnsafeCell<T>,
 }
 
-/// A handle to a held `Mutex`.
+/// A handle to a held `Mutex`. The guard can be held across any `.await` point
+/// as it is [`Send`].
 ///
 /// As long as you have this guard, you have exclusive access to the underlying
 /// `T`. The guard internally borrows the `Mutex`, so the mutex will not be
