@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1625845031867,
+  "lastUpdate": 1626023359608,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -911,6 +911,54 @@ window.BENCHMARK_DATA = {
             "name": "yield_many",
             "value": 17209898,
             "range": "± 2851655",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ffa8a998bef7f4d636ecc78aa03d52e6959fd538",
+          "message": "Merge pull request #44 from tokio-rs/master\n\ntests: update Nix to 0.22.0 (#3951)",
+          "timestamp": "2021-07-11T17:44:41+02:00",
+          "tree_id": "e8b016913ba0e8a1986054360fb8df23b6b06a24",
+          "url": "https://github.com/sthagen/tokio/commit/ffa8a998bef7f4d636ecc78aa03d52e6959fd538"
+        },
+        "date": 1626023358876,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "chained_spawn",
+            "value": 226950,
+            "range": "± 33209",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ping_pong",
+            "value": 1118166,
+            "range": "± 212109",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "spawn_many",
+            "value": 6669142,
+            "range": "± 3202586",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "yield_many",
+            "value": 21676687,
+            "range": "± 4697874",
             "unit": "ns/iter"
           }
         ]
