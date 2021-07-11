@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1626023433348,
+  "lastUpdate": 1626023460012,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -3447,6 +3447,60 @@ window.BENCHMARK_DATA = {
             "name": "uncontended_concurrent_single",
             "value": 839,
             "range": "± 2",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ffa8a998bef7f4d636ecc78aa03d52e6959fd538",
+          "message": "Merge pull request #44 from tokio-rs/master\n\ntests: update Nix to 0.22.0 (#3951)",
+          "timestamp": "2021-07-11T17:44:41+02:00",
+          "tree_id": "e8b016913ba0e8a1986054360fb8df23b6b06a24",
+          "url": "https://github.com/sthagen/tokio/commit/ffa8a998bef7f4d636ecc78aa03d52e6959fd538"
+        },
+        "date": 1626023459355,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "contended_concurrent_multi",
+            "value": 13095,
+            "range": "± 4059",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "contended_concurrent_single",
+            "value": 826,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "uncontended",
+            "value": 542,
+            "range": "± 22",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "uncontended_concurrent_multi",
+            "value": 12893,
+            "range": "± 4220",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "uncontended_concurrent_single",
+            "value": 825,
+            "range": "± 3",
             "unit": "ns/iter"
           }
         ]
