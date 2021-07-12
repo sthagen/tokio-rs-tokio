@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1626093493991,
+  "lastUpdate": 1626093597022,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -3717,6 +3717,60 @@ window.BENCHMARK_DATA = {
             "name": "uncontended_concurrent_single",
             "value": 825,
             "range": "± 3",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ea1b8da9e9a96d6c53ccf61acee6496952dc8104",
+          "message": "Merge pull request #45 from tokio-rs/master\n\nruntime: move inject queue to `tokio::runtime::task` (#3939)",
+          "timestamp": "2021-07-12T11:15:19+02:00",
+          "tree_id": "ed5c8eb458d2554fddaccf482f85c3b92822cf9a",
+          "url": "https://github.com/sthagen/tokio/commit/ea1b8da9e9a96d6c53ccf61acee6496952dc8104"
+        },
+        "date": 1626093595809,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "contended_concurrent_multi",
+            "value": 18977,
+            "range": "± 9813",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "contended_concurrent_single",
+            "value": 1019,
+            "range": "± 112",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "uncontended",
+            "value": 642,
+            "range": "± 114",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "uncontended_concurrent_multi",
+            "value": 18358,
+            "range": "± 8420",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "uncontended_concurrent_single",
+            "value": 973,
+            "range": "± 159",
             "unit": "ns/iter"
           }
         ]
