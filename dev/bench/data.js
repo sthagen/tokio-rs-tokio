@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1626023464794,
+  "lastUpdate": 1626093135048,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -959,6 +959,54 @@ window.BENCHMARK_DATA = {
             "name": "yield_many",
             "value": 21676687,
             "range": "± 4697874",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ea1b8da9e9a96d6c53ccf61acee6496952dc8104",
+          "message": "Merge pull request #45 from tokio-rs/master\n\nruntime: move inject queue to `tokio::runtime::task` (#3939)",
+          "timestamp": "2021-07-12T11:15:19+02:00",
+          "tree_id": "ed5c8eb458d2554fddaccf482f85c3b92822cf9a",
+          "url": "https://github.com/sthagen/tokio/commit/ea1b8da9e9a96d6c53ccf61acee6496952dc8104"
+        },
+        "date": 1626093133774,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "chained_spawn",
+            "value": 199483,
+            "range": "± 38670",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ping_pong",
+            "value": 897240,
+            "range": "± 179025",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "spawn_many",
+            "value": 5545560,
+            "range": "± 2117448",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "yield_many",
+            "value": 19461562,
+            "range": "± 4004886",
             "unit": "ns/iter"
           }
         ]
