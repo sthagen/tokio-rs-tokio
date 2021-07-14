@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1626278421977,
+  "lastUpdate": 1626278722257,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -5417,6 +5417,60 @@ window.BENCHMARK_DATA = {
             "name": "read_uncontended",
             "value": 436,
             "range": "± 31",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "810bf272dacc67239cedecc638a6b89cd4646291",
+          "message": "Merge pull request #48 from tokio-rs/master\n\nnet: documentation updates (#3944)",
+          "timestamp": "2021-07-14T10:46:46+02:00",
+          "tree_id": "d7b0e59930dab7c425ebe45993d382491395cf05",
+          "url": "https://github.com/sthagen/tokio/commit/810bf272dacc67239cedecc638a6b89cd4646291"
+        },
+        "date": 1626278721508,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "read_concurrent_contended",
+            "value": 832,
+            "range": "± 116",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_concurrent_contended_multi",
+            "value": 16006,
+            "range": "± 5964",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_concurrent_uncontended",
+            "value": 832,
+            "range": "± 125",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_concurrent_uncontended_multi",
+            "value": 15898,
+            "range": "± 5626",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_uncontended",
+            "value": 582,
+            "range": "± 57",
             "unit": "ns/iter"
           }
         ]
