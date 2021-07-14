@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1626165017070,
+  "lastUpdate": 1626278208645,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -1055,6 +1055,54 @@ window.BENCHMARK_DATA = {
             "name": "yield_many",
             "value": 21675201,
             "range": "± 3895333",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "810bf272dacc67239cedecc638a6b89cd4646291",
+          "message": "Merge pull request #48 from tokio-rs/master\n\nnet: documentation updates (#3944)",
+          "timestamp": "2021-07-14T10:46:46+02:00",
+          "tree_id": "d7b0e59930dab7c425ebe45993d382491395cf05",
+          "url": "https://github.com/sthagen/tokio/commit/810bf272dacc67239cedecc638a6b89cd4646291"
+        },
+        "date": 1626278207890,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "chained_spawn",
+            "value": 189127,
+            "range": "± 6463",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ping_pong",
+            "value": 902271,
+            "range": "± 129721",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "spawn_many",
+            "value": 5413026,
+            "range": "± 2214478",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "yield_many",
+            "value": 17777520,
+            "range": "± 2101302",
             "unit": "ns/iter"
           }
         ]
