@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1626457199927,
+  "lastUpdate": 1626458026380,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -5603,6 +5603,60 @@ window.BENCHMARK_DATA = {
             "name": "read_uncontended",
             "value": 582,
             "range": "± 57",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d66a3a5cc13056e66b0ca96477b084cc4d5052dc",
+          "message": "Merge pull request #49 from tokio-rs/master\n\ntask: remove mutex in JoinError (#3959)",
+          "timestamp": "2021-07-16T09:57:52+02:00",
+          "tree_id": "f259a37edce5df791fa490022b27a12bc720b309",
+          "url": "https://github.com/sthagen/tokio/commit/d66a3a5cc13056e66b0ca96477b084cc4d5052dc"
+        },
+        "date": 1626458025052,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "read_concurrent_contended",
+            "value": 895,
+            "range": "± 32",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_concurrent_contended_multi",
+            "value": 17021,
+            "range": "± 6810",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_concurrent_uncontended",
+            "value": 912,
+            "range": "± 57",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_concurrent_uncontended_multi",
+            "value": 16965,
+            "range": "± 5243",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_uncontended",
+            "value": 594,
+            "range": "± 27",
             "unit": "ns/iter"
           }
         ]
