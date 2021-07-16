@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1626278722257,
+  "lastUpdate": 1626456126541,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -1103,6 +1103,54 @@ window.BENCHMARK_DATA = {
             "name": "yield_many",
             "value": 17777520,
             "range": "± 2101302",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d66a3a5cc13056e66b0ca96477b084cc4d5052dc",
+          "message": "Merge pull request #49 from tokio-rs/master\n\ntask: remove mutex in JoinError (#3959)",
+          "timestamp": "2021-07-16T09:57:52+02:00",
+          "tree_id": "f259a37edce5df791fa490022b27a12bc720b309",
+          "url": "https://github.com/sthagen/tokio/commit/d66a3a5cc13056e66b0ca96477b084cc4d5052dc"
+        },
+        "date": 1626456125581,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "chained_spawn",
+            "value": 223738,
+            "range": "± 32179",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ping_pong",
+            "value": 1038162,
+            "range": "± 108440",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "spawn_many",
+            "value": 5697058,
+            "range": "± 1077143",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "yield_many",
+            "value": 21730002,
+            "range": "± 3854170",
             "unit": "ns/iter"
           }
         ]
