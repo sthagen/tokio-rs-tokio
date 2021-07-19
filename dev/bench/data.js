@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1626459040860,
+  "lastUpdate": 1626669015355,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -3169,6 +3169,90 @@ window.BENCHMARK_DATA = {
             "name": "uncontented_unbounded",
             "value": 791918,
             "range": "± 98855",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ebdbd71a2817d9723b649be0e4d78e343193ad9d",
+          "message": "Merge pull request #50 from tokio-rs/master\n\nruntime: drop future when polling cancelled future (#3965)",
+          "timestamp": "2021-07-19T05:24:11+02:00",
+          "tree_id": "147b4ab7f221812cf21bbc614e3ee4fe5a5e4932",
+          "url": "https://github.com/sthagen/tokio/commit/ebdbd71a2817d9723b649be0e4d78e343193ad9d"
+        },
+        "date": 1626669014559,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "contention_bounded",
+            "value": 7304839,
+            "range": "± 2898088",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "contention_bounded_full",
+            "value": 6607063,
+            "range": "± 2081805",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "contention_unbounded",
+            "value": 6865912,
+            "range": "± 2033560",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "create_100_000_medium",
+            "value": 282,
+            "range": "± 34",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "create_100_medium",
+            "value": 287,
+            "range": "± 16",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "create_1_medium",
+            "value": 288,
+            "range": "± 20",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "send_large",
+            "value": 30700,
+            "range": "± 4575",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "send_medium",
+            "value": 950,
+            "range": "± 130",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "uncontented_bounded",
+            "value": 1123114,
+            "range": "± 184700",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "uncontented_unbounded",
+            "value": 806692,
+            "range": "± 96394",
             "unit": "ns/iter"
           }
         ]
