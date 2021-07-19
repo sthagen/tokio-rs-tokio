@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1626669015355,
+  "lastUpdate": 1626669021139,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -1151,6 +1151,54 @@ window.BENCHMARK_DATA = {
             "name": "yield_many",
             "value": 21730002,
             "range": "± 3854170",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ebdbd71a2817d9723b649be0e4d78e343193ad9d",
+          "message": "Merge pull request #50 from tokio-rs/master\n\nruntime: drop future when polling cancelled future (#3965)",
+          "timestamp": "2021-07-19T05:24:11+02:00",
+          "tree_id": "147b4ab7f221812cf21bbc614e3ee4fe5a5e4932",
+          "url": "https://github.com/sthagen/tokio/commit/ebdbd71a2817d9723b649be0e4d78e343193ad9d"
+        },
+        "date": 1626669019872,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "chained_spawn",
+            "value": 210527,
+            "range": "± 37211",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ping_pong",
+            "value": 1023100,
+            "range": "± 188968",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "spawn_many",
+            "value": 5848563,
+            "range": "± 1981796",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "yield_many",
+            "value": 20196761,
+            "range": "± 2942726",
             "unit": "ns/iter"
           }
         ]
