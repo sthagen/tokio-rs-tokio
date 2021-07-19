@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1626729203007,
+  "lastUpdate": 1626729214436,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -6053,6 +6053,60 @@ window.BENCHMARK_DATA = {
             "name": "read_uncontended",
             "value": 486,
             "range": "± 72",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e459937db35b85b563af128ba1bbd02987b22da0",
+          "message": "Merge pull request #51 from tokio-rs/master\n\nSync Fork from Upstream Repo",
+          "timestamp": "2021-07-19T22:42:06+02:00",
+          "tree_id": "a7378bca1e02617fb17efc54d41c99ff10a5c9eb",
+          "url": "https://github.com/sthagen/tokio/commit/e459937db35b85b563af128ba1bbd02987b22da0"
+        },
+        "date": 1626729213103,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "read_concurrent_contended",
+            "value": 922,
+            "range": "± 123",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_concurrent_contended_multi",
+            "value": 17583,
+            "range": "± 7011",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_concurrent_uncontended",
+            "value": 941,
+            "range": "± 171",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_concurrent_uncontended_multi",
+            "value": 16235,
+            "range": "± 7966",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_uncontended",
+            "value": 587,
+            "range": "± 102",
             "unit": "ns/iter"
           }
         ]
