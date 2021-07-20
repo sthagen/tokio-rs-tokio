@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1626778760552,
+  "lastUpdate": 1626778763863,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -6239,6 +6239,60 @@ window.BENCHMARK_DATA = {
             "name": "read_uncontended",
             "value": 587,
             "range": "± 102",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b4f09a698d4d09ff92038da2608986bb2ed15dd2",
+          "message": "Merge pull request #52 from tokio-rs/master\n\nchore: use the loom mutex wrapper everywhere (#3958)",
+          "timestamp": "2021-07-20T12:57:51+02:00",
+          "tree_id": "fa41e7195a04f13f3a11c2068023a374a24c6c63",
+          "url": "https://github.com/sthagen/tokio/commit/b4f09a698d4d09ff92038da2608986bb2ed15dd2"
+        },
+        "date": 1626778760354,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "read_concurrent_contended",
+            "value": 743,
+            "range": "± 6",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_concurrent_contended_multi",
+            "value": 12749,
+            "range": "± 3735",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_concurrent_uncontended",
+            "value": 765,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_concurrent_uncontended_multi",
+            "value": 13130,
+            "range": "± 7637",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_uncontended",
+            "value": 495,
+            "range": "± 62",
             "unit": "ns/iter"
           }
         ]
