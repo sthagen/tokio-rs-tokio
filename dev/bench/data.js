@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1626778766566,
+  "lastUpdate": 1626778786974,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -3481,6 +3481,90 @@ window.BENCHMARK_DATA = {
             "name": "uncontented_unbounded",
             "value": 790980,
             "range": "± 6981",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b4f09a698d4d09ff92038da2608986bb2ed15dd2",
+          "message": "Merge pull request #52 from tokio-rs/master\n\nchore: use the loom mutex wrapper everywhere (#3958)",
+          "timestamp": "2021-07-20T12:57:51+02:00",
+          "tree_id": "fa41e7195a04f13f3a11c2068023a374a24c6c63",
+          "url": "https://github.com/sthagen/tokio/commit/b4f09a698d4d09ff92038da2608986bb2ed15dd2"
+        },
+        "date": 1626778785697,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "contention_bounded",
+            "value": 6582873,
+            "range": "± 2706341",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "contention_bounded_full",
+            "value": 6363120,
+            "range": "± 2545532",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "contention_unbounded",
+            "value": 6697937,
+            "range": "± 2505733",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "create_100_000_medium",
+            "value": 294,
+            "range": "± 33",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "create_100_medium",
+            "value": 292,
+            "range": "± 21",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "create_1_medium",
+            "value": 292,
+            "range": "± 19",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "send_large",
+            "value": 58849,
+            "range": "± 5834",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "send_medium",
+            "value": 958,
+            "range": "± 118",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "uncontented_bounded",
+            "value": 1042582,
+            "range": "± 46057",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "uncontented_unbounded",
+            "value": 727559,
+            "range": "± 41739",
             "unit": "ns/iter"
           }
         ]
