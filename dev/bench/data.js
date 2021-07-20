@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1626729234460,
+  "lastUpdate": 1626778760552,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -1247,6 +1247,54 @@ window.BENCHMARK_DATA = {
             "name": "yield_many",
             "value": 17191533,
             "range": "± 2423050",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b4f09a698d4d09ff92038da2608986bb2ed15dd2",
+          "message": "Merge pull request #52 from tokio-rs/master\n\nchore: use the loom mutex wrapper everywhere (#3958)",
+          "timestamp": "2021-07-20T12:57:51+02:00",
+          "tree_id": "fa41e7195a04f13f3a11c2068023a374a24c6c63",
+          "url": "https://github.com/sthagen/tokio/commit/b4f09a698d4d09ff92038da2608986bb2ed15dd2"
+        },
+        "date": 1626778759872,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "chained_spawn",
+            "value": 185744,
+            "range": "± 21590",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ping_pong",
+            "value": 829197,
+            "range": "± 246646",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "spawn_many",
+            "value": 4977015,
+            "range": "± 1704505",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "yield_many",
+            "value": 18096325,
+            "range": "± 2022283",
             "unit": "ns/iter"
           }
         ]
