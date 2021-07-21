@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1626809859795,
+  "lastUpdate": 1626903399091,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -1343,6 +1343,54 @@ window.BENCHMARK_DATA = {
             "name": "yield_many",
             "value": 20345090,
             "range": "± 3651933",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "375d3747bd0e3fd43821cf3ef8fb51131381dbfb",
+          "message": "Merge pull request #54 from tokio-rs/master\n\nruntime: make scheduler non-optional (#3980)",
+          "timestamp": "2021-07-21T23:16:30+02:00",
+          "tree_id": "4d971aae10d426d3b81f2a80326115ccead220df",
+          "url": "https://github.com/sthagen/tokio/commit/375d3747bd0e3fd43821cf3ef8fb51131381dbfb"
+        },
+        "date": 1626903398337,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "chained_spawn",
+            "value": 187131,
+            "range": "± 4763",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ping_pong",
+            "value": 958135,
+            "range": "± 67880",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "spawn_many",
+            "value": 6248796,
+            "range": "± 2595103",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "yield_many",
+            "value": 18964792,
+            "range": "± 2804732",
             "unit": "ns/iter"
           }
         ]
