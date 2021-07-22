@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1626903461536,
+  "lastUpdate": 1626944528916,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -1391,6 +1391,54 @@ window.BENCHMARK_DATA = {
             "name": "yield_many",
             "value": 18964792,
             "range": "± 2804732",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9d30dc51c950d5073d8ad4d74814b4336105127a",
+          "message": "Merge pull request #55 from tokio-rs/master\n\nruntime: add large test and fix leak it found (#3967)",
+          "timestamp": "2021-07-22T09:45:12+02:00",
+          "tree_id": "1071d876764d02dca7bf6250179fee22939bf725",
+          "url": "https://github.com/sthagen/tokio/commit/9d30dc51c950d5073d8ad4d74814b4336105127a"
+        },
+        "date": 1626944527596,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "chained_spawn",
+            "value": 207501,
+            "range": "± 48909",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ping_pong",
+            "value": 971337,
+            "range": "± 177872",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "spawn_many",
+            "value": 5895819,
+            "range": "± 1946404",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "yield_many",
+            "value": 18675773,
+            "range": "± 2860737",
             "unit": "ns/iter"
           }
         ]
