@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1626944635316,
+  "lastUpdate": 1626944746081,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -7043,6 +7043,60 @@ window.BENCHMARK_DATA = {
             "name": "read_uncontended",
             "value": 670,
             "range": "± 226",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9d30dc51c950d5073d8ad4d74814b4336105127a",
+          "message": "Merge pull request #55 from tokio-rs/master\n\nruntime: add large test and fix leak it found (#3967)",
+          "timestamp": "2021-07-22T09:45:12+02:00",
+          "tree_id": "1071d876764d02dca7bf6250179fee22939bf725",
+          "url": "https://github.com/sthagen/tokio/commit/9d30dc51c950d5073d8ad4d74814b4336105127a"
+        },
+        "date": 1626944744738,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "read_concurrent_contended",
+            "value": 904,
+            "range": "± 88",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_concurrent_contended_multi",
+            "value": 17483,
+            "range": "± 6072",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_concurrent_uncontended",
+            "value": 923,
+            "range": "± 117",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_concurrent_uncontended_multi",
+            "value": 19149,
+            "range": "± 8866",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_uncontended",
+            "value": 562,
+            "range": "± 65",
             "unit": "ns/iter"
           }
         ]
