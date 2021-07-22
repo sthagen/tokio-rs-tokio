@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1626944528916,
+  "lastUpdate": 1626944635316,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -3877,6 +3877,90 @@ window.BENCHMARK_DATA = {
             "name": "uncontented_unbounded",
             "value": 667948,
             "range": "± 1720",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9d30dc51c950d5073d8ad4d74814b4336105127a",
+          "message": "Merge pull request #55 from tokio-rs/master\n\nruntime: add large test and fix leak it found (#3967)",
+          "timestamp": "2021-07-22T09:45:12+02:00",
+          "tree_id": "1071d876764d02dca7bf6250179fee22939bf725",
+          "url": "https://github.com/sthagen/tokio/commit/9d30dc51c950d5073d8ad4d74814b4336105127a"
+        },
+        "date": 1626944634620,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "contention_bounded",
+            "value": 6405694,
+            "range": "± 2177646",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "contention_bounded_full",
+            "value": 5955103,
+            "range": "± 2248551",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "contention_unbounded",
+            "value": 6468250,
+            "range": "± 1994626",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "create_100_000_medium",
+            "value": 255,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "create_100_medium",
+            "value": 255,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "create_1_medium",
+            "value": 255,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "send_large",
+            "value": 25048,
+            "range": "± 347",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "send_medium",
+            "value": 807,
+            "range": "± 32",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "uncontented_bounded",
+            "value": 933647,
+            "range": "± 4571",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "uncontented_unbounded",
+            "value": 676295,
+            "range": "± 10611",
             "unit": "ns/iter"
           }
         ]
