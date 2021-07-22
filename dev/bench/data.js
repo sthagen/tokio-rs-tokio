@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1626957639061,
+  "lastUpdate": 1626957649751,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -1487,6 +1487,54 @@ window.BENCHMARK_DATA = {
             "name": "yield_many",
             "value": 22877494,
             "range": "± 3087006",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "82554b562c9437ce3fe1b23621ca6c99deebb7a6",
+          "message": "Merge pull request #57 from tokio-rs/master\n\nreadme: add release schedule and bugfix policy (#3948)",
+          "timestamp": "2021-07-22T14:28:57+02:00",
+          "tree_id": "4e3fd61df727ca74eab4ec8b9fd7d135433d5403",
+          "url": "https://github.com/sthagen/tokio/commit/82554b562c9437ce3fe1b23621ca6c99deebb7a6"
+        },
+        "date": 1626957648420,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "chained_spawn",
+            "value": 240951,
+            "range": "± 82506",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ping_pong",
+            "value": 1019315,
+            "range": "± 136944",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "spawn_many",
+            "value": 6533852,
+            "range": "± 1770907",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "yield_many",
+            "value": 21793261,
+            "range": "± 2564639",
             "unit": "ns/iter"
           }
         ]
