@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1627637612828,
+  "lastUpdate": 1627645333660,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -1679,6 +1679,54 @@ window.BENCHMARK_DATA = {
             "name": "yield_many",
             "value": 18248031,
             "range": "± 2995698",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "3f42606c40f967268224671fefd3af7136f509e2",
+          "message": "Merge pull request #62 from tokio-rs/master\n\nchore: fix CI on master (#4008)",
+          "timestamp": "2021-07-30T12:38:59+02:00",
+          "tree_id": "45131557556163839e10452f9d16f46e7e7784de",
+          "url": "https://github.com/sthagen/tokio/commit/3f42606c40f967268224671fefd3af7136f509e2"
+        },
+        "date": 1627645332894,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "chained_spawn",
+            "value": 230081,
+            "range": "± 37520",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ping_pong",
+            "value": 1145713,
+            "range": "± 124260",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "spawn_many",
+            "value": 6741032,
+            "range": "± 1583728",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "yield_many",
+            "value": 21195022,
+            "range": "± 5327171",
             "unit": "ns/iter"
           }
         ]
