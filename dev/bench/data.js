@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1628948362127,
+  "lastUpdate": 1629120576259,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -1919,6 +1919,54 @@ window.BENCHMARK_DATA = {
             "name": "yield_many",
             "value": 20631901,
             "range": "± 1873614",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "804ca9aed8ad5751e01fe2d1959b7f89a6c362d0",
+          "message": "Merge pull request #67 from tokio-rs/master\n\ntime: make Sleep examples easier to find (#4040)",
+          "timestamp": "2021-08-16T13:11:37+02:00",
+          "tree_id": "9b109b86d6ccc49497dc77bfd1e224c941c5e7e8",
+          "url": "https://github.com/sthagen/tokio/commit/804ca9aed8ad5751e01fe2d1959b7f89a6c362d0"
+        },
+        "date": 1629120575234,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "chained_spawn",
+            "value": 183889,
+            "range": "± 2188",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ping_pong",
+            "value": 1025998,
+            "range": "± 89172",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "spawn_many",
+            "value": 5899289,
+            "range": "± 584011",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "yield_many",
+            "value": 17267310,
+            "range": "± 1665233",
             "unit": "ns/iter"
           }
         ]
