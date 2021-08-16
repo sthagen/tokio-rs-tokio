@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1629120768144,
+  "lastUpdate": 1629120839702,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -7467,6 +7467,60 @@ window.BENCHMARK_DATA = {
             "name": "uncontended_concurrent_single",
             "value": 1015,
             "range": "± 133",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "804ca9aed8ad5751e01fe2d1959b7f89a6c362d0",
+          "message": "Merge pull request #67 from tokio-rs/master\n\ntime: make Sleep examples easier to find (#4040)",
+          "timestamp": "2021-08-16T13:11:37+02:00",
+          "tree_id": "9b109b86d6ccc49497dc77bfd1e224c941c5e7e8",
+          "url": "https://github.com/sthagen/tokio/commit/804ca9aed8ad5751e01fe2d1959b7f89a6c362d0"
+        },
+        "date": 1629120838853,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "contended_concurrent_multi",
+            "value": 16017,
+            "range": "± 6258",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "contended_concurrent_single",
+            "value": 1014,
+            "range": "± 15",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "uncontended",
+            "value": 644,
+            "range": "± 32",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "uncontended_concurrent_multi",
+            "value": 16946,
+            "range": "± 6218",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "uncontended_concurrent_single",
+            "value": 1005,
+            "range": "± 6",
             "unit": "ns/iter"
           }
         ]
