@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1629120576259,
+  "lastUpdate": 1629120727210,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -5329,6 +5329,90 @@ window.BENCHMARK_DATA = {
             "name": "uncontented_unbounded",
             "value": 724691,
             "range": "± 123314",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@hagen.link",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "804ca9aed8ad5751e01fe2d1959b7f89a6c362d0",
+          "message": "Merge pull request #67 from tokio-rs/master\n\ntime: make Sleep examples easier to find (#4040)",
+          "timestamp": "2021-08-16T13:11:37+02:00",
+          "tree_id": "9b109b86d6ccc49497dc77bfd1e224c941c5e7e8",
+          "url": "https://github.com/sthagen/tokio/commit/804ca9aed8ad5751e01fe2d1959b7f89a6c362d0"
+        },
+        "date": 1629120719212,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "contention_bounded",
+            "value": 8179615,
+            "range": "± 4228415",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "contention_bounded_full",
+            "value": 7859358,
+            "range": "± 3531969",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "contention_unbounded",
+            "value": 8565878,
+            "range": "± 3800309",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "create_100_000_medium",
+            "value": 327,
+            "range": "± 32",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "create_100_medium",
+            "value": 322,
+            "range": "± 44",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "create_1_medium",
+            "value": 332,
+            "range": "± 46",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "send_large",
+            "value": 68607,
+            "range": "± 14145",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "send_medium",
+            "value": 1080,
+            "range": "± 239",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "uncontented_bounded",
+            "value": 1199227,
+            "range": "± 246828",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "uncontented_unbounded",
+            "value": 837372,
+            "range": "± 227299",
             "unit": "ns/iter"
           }
         ]
