@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1629973758396,
+  "lastUpdate": 1629974068370,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -9761,6 +9761,60 @@ window.BENCHMARK_DATA = {
             "name": "read_uncontended",
             "value": 583,
             "range": "± 402",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@dilettant.eu",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "00bd4aa853441e0c2115208f2c967cf1d1d4a8f4",
+          "message": "Merge branch 'tokio-rs:master' into master",
+          "timestamp": "2021-08-26T12:22:09+02:00",
+          "tree_id": "3ef91dc5f45b59b2658c063d5239145ae4e8854b",
+          "url": "https://github.com/sthagen/tokio/commit/00bd4aa853441e0c2115208f2c967cf1d1d4a8f4"
+        },
+        "date": 1629974067439,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "read_concurrent_contended",
+            "value": 895,
+            "range": "± 51",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_concurrent_contended_multi",
+            "value": 17658,
+            "range": "± 7435",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_concurrent_uncontended",
+            "value": 930,
+            "range": "± 31",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_concurrent_uncontended_multi",
+            "value": 16238,
+            "range": "± 5337",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "read_uncontended",
+            "value": 564,
+            "range": "± 36",
             "unit": "ns/iter"
           }
         ]
