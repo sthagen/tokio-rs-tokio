@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1630062390131,
+  "lastUpdate": 1630062692237,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -2015,6 +2015,54 @@ window.BENCHMARK_DATA = {
             "name": "yield_many",
             "value": 20594972,
             "range": "± 3556208",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@dilettant.eu",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9380b711e8d245c85bd5283eb79ac4098da61a6a",
+          "message": "Merge branch 'tokio-rs:master' into master",
+          "timestamp": "2021-08-27T12:48:58+02:00",
+          "tree_id": "b2149480b9183f19d1a5699215771949d3c6a545",
+          "url": "https://github.com/sthagen/tokio/commit/9380b711e8d245c85bd5283eb79ac4098da61a6a"
+        },
+        "date": 1630062690834,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "chained_spawn",
+            "value": 186553,
+            "range": "± 3316",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ping_pong",
+            "value": 1001093,
+            "range": "± 120264",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "spawn_many",
+            "value": 5864684,
+            "range": "± 1554004",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "yield_many",
+            "value": 15971327,
+            "range": "± 3368283",
             "unit": "ns/iter"
           }
         ]
