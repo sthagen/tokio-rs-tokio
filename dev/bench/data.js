@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1630063035632,
+  "lastUpdate": 1630063335652,
   "repoUrl": "https://github.com/sthagen/tokio",
   "entries": {
     "rt_multi_threaded": [
@@ -7839,6 +7839,60 @@ window.BENCHMARK_DATA = {
             "name": "uncontended_concurrent_single",
             "value": 1027,
             "range": "± 102",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "stefan@dilettant.eu",
+            "name": "Stefan Hagen",
+            "username": "sthagen"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9380b711e8d245c85bd5283eb79ac4098da61a6a",
+          "message": "Merge branch 'tokio-rs:master' into master",
+          "timestamp": "2021-08-27T12:48:58+02:00",
+          "tree_id": "b2149480b9183f19d1a5699215771949d3c6a545",
+          "url": "https://github.com/sthagen/tokio/commit/9380b711e8d245c85bd5283eb79ac4098da61a6a"
+        },
+        "date": 1630063334272,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "contended_concurrent_multi",
+            "value": 15554,
+            "range": "± 10091",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "contended_concurrent_single",
+            "value": 898,
+            "range": "± 186",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "uncontended",
+            "value": 556,
+            "range": "± 341",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "uncontended_concurrent_multi",
+            "value": 16339,
+            "range": "± 13100",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "uncontended_concurrent_single",
+            "value": 898,
+            "range": "± 162",
             "unit": "ns/iter"
           }
         ]
