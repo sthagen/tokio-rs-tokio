@@ -99,7 +99,6 @@ macro_rules! cfg_io_driver_impl {
                 feature = "process",
                 all(unix, feature = "signal"),
             ))]
-            #[cfg_attr(docsrs, doc(cfg(all())))]
             $item
         )*
     }
@@ -369,7 +368,7 @@ macro_rules! cfg_trace {
             #[cfg_attr(docsrs, doc(cfg(feature = "tracing")))]
             $item
         )*
-    }
+    };
 }
 
 macro_rules! cfg_not_trace {
