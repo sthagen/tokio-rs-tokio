@@ -26,6 +26,10 @@ where
         }
     }
 
+    fn header_ptr(&self) -> NonNull<Header> {
+        self.cell.cast()
+    }
+
     fn header(&self) -> &Header {
         unsafe { &self.cell.as_ref().header }
     }
@@ -93,7 +97,8 @@ where
 
         match self.header().state.transition_to_running() {
             TransitionToRunning::Success => {
-                let waker_ref = waker_ref::<T, S>(self.header());
+                let header_ptr = self.header_ptr();
+                let waker_ref = waker_ref::<T, S>(&header_ptr);
                 let cx = Context::from_waker(&*waker_ref);
                 let res = poll_future(&self.core().stage, cx);
 
@@ -162,6 +167,13 @@ where
         if can_read_output(self.header(), self.trailer(), waker) {
             *dst = Poll::Ready(self.core().stage.take_output());
         }
+    }
+
+    /// Try to set the waker notified when the task is complete. Returns true if
+    /// the task has already completed. If this call returns false, then the
+    /// waker will not be notified.
+    pub(super) fn try_set_join_waker(self, waker: &Waker) -> bool {
+        can_read_output(self.header(), self.trailer(), waker)
     }
 
     pub(super) fn drop_join_handle_slow(self) {

@@ -13,7 +13,7 @@ env:
   rust_stable: stable
   rust_nightly: nightly-2022-01-12
   rust_clippy: 1.52.0
-  rust_min: 1.46.0
+  rust_min: 1.49.0
 
 defaults:
   run:
@@ -188,11 +188,13 @@ jobs:
           override: true
       - uses: Swatinem/rust-cache@v1
       - name: miri
-        run: |
-          set -e
-          rm -rf tests
-          cargo miri test --features rt,rt-multi-thread,sync task
+        # Many of tests in tokio/tests and doctests use #[tokio::test] or
+        # #[tokio::main] that calls epoll_create1 that Miri does not support.
+        run: cargo miri test --features full --lib --no-fail-fast
         working-directory: tokio
+        env:
+          MIRIFLAGS: -Zmiri-disable-isolation -Zmiri-tag-raw-pointers
+          PROPTEST_CASES: 10
 
   san:
     name: san
