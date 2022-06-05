@@ -1,3 +1,9 @@
+# 1.19.1 (June 5, 2022)
+
+This release fixes a bug in `Notified::enable`. ([#4747])
+
+[#4747]: https://github.com/tokio-rs/tokio/pull/4747
+
 # 1.19.0 (June 3, 2022)
 
 ### Added
@@ -79,8 +85,6 @@ task), as well as a number of bugfixes.
 
 ### Added
 
-- macros: support setting a custom crate name for `#[tokio::main]` and
-  `#[tokio::test]` ([#4613])
 - net: add `UdpSocket::peer_addr` ([#4611])
 - net: add `try_read_buf` method for named pipes ([#4626])
 - signal: add `SignalKind` `Hash`/`Eq` impls and `c_int` conversion ([#4540])
