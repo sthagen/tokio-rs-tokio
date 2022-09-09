@@ -16,6 +16,7 @@
 ))]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, allow(unused_attributes))]
+#![cfg_attr(loom, allow(dead_code, unreachable_pub))]
 
 //! A runtime for writing reliable network applications without compromising speed.
 //!
@@ -152,7 +153,7 @@
 //! provide the functionality you need.
 //!
 //! Using the runtime requires the "rt" or "rt-multi-thread" feature flags, to
-//! enable the basic [single-threaded scheduler][rt] and the [thread-pool
+//! enable the current-thread [single-threaded scheduler][rt] and the [multi-thread
 //! scheduler][rt-multi-thread], respectively. See the [`runtime` module
 //! documentation][rt-features] for details. In addition, the "macros" feature
 //! flag enables the `#[tokio::main]` and `#[tokio::test]` attributes.
@@ -309,7 +310,7 @@
 //! need.
 //!
 //! - `full`: Enables all features listed below except `test-util` and `tracing`.
-//! - `rt`: Enables `tokio::spawn`, the basic (current thread) scheduler,
+//! - `rt`: Enables `tokio::spawn`, the current-thread scheduler,
 //!         and non-scheduler utilities.
 //! - `rt-multi-thread`: Enables the heavier, multi-threaded, work-stealing scheduler.
 //! - `io-util`: Enables the IO based `Ext` traits.
@@ -348,7 +349,11 @@
 //! Likewise, some parts of the API are only available with the same flag:
 //!
 //! - [`task::Builder`]
-//!  
+//! - Some methods on [`task::JoinSet`]
+//! - [`runtime::RuntimeMetrics`]
+//! - [`runtime::Builder::unhandled_panic`]
+//! - [`task::Id`]
+//!
 //! This flag enables **unstable** features. The public API of these features
 //! may break in 1.x releases. To enable these features, the `--cfg
 //! tokio_unstable` argument must be passed to `rustc` when compiling. This
@@ -378,6 +383,39 @@
 //!
 //! [unstable features]: https://internals.rust-lang.org/t/feature-request-unstable-opt-in-non-transitive-crate-features/16193#why-not-a-crate-feature-2
 //! [feature flags]: https://doc.rust-lang.org/cargo/reference/manifest.html#the-features-section
+//!
+//! ## WASM support
+//!
+//! Tokio has some limited support for the WASM platform. Without the
+//! `tokio_unstable` flag, the following features are supported:
+//!
+//!  * `sync`
+//!  * `macros`
+//!  * `io-util`
+//!  * `rt`
+//!  * `time`
+//!
+//! Enabling any other feature (including `full`) will cause a compilation
+//! failure.
+//!
+//! The `time` module will only work on WASM platforms that have support for
+//! timers (e.g. wasm32-wasi). The timing functions will panic if used on a WASM
+//! platform that does not support timers.
+//!
+//! Note also that if the runtime becomes indefinitely idle, it will panic
+//! immediately instead of blocking forever. On platforms that don't support
+//! time, this means that the runtime can never be idle in any way.
+//!
+//! ### Unstable WASM support
+//!
+//! Tokio also has unstable support for some additional WASM features. This
+//! requires the use of the `tokio_unstable` flag.
+//!
+//! Using this flag enables the use of `tokio::net` on the wasm32-wasi target.
+//! However, not all methods are available on the networking types as WASI
+//! currently does not support the creation of new sockets from within WASM.
+//! Because of this, sockets must currently be created via the `FromRawFd`
+//! trait.
 
 // Test that pointer width is compatible. This asserts that e.g. usize is at
 // least 32 bits, which a lot of components in Tokio currently assumes.
@@ -421,7 +459,7 @@ compile_error!("Tokio's build script has incorrectly detected wasm.");
         feature = "signal"
     )
 ))]
-compile_error!("Only features sync,macros,io-util,rt are supported on wasm.");
+compile_error!("Only features sync,macros,io-util,rt,time are supported on wasm.");
 
 // Includes re-exports used by macros.
 //
@@ -457,6 +495,10 @@ mod blocking;
 
 cfg_rt! {
     pub mod runtime;
+}
+cfg_not_rt! {
+    // The `runtime` module is used when the IO or time driver is needed.
+    pub(crate) mod runtime;
 }
 
 pub(crate) mod coop;

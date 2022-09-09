@@ -22,8 +22,8 @@ cfg_io_util! {
 cfg_net_unix! {
     /// A structure representing a connected Unix socket.
     ///
-    /// This socket can be connected directly with `UnixStream::connect` or accepted
-    /// from a listener with `UnixListener::incoming`. Additionally, a pair of
+    /// This socket can be connected directly with [`UnixStream::connect`] or accepted
+    /// from a listener with [`UnixListener::accept`]. Additionally, a pair of
     /// anonymous Unix sockets can be created with `UnixStream::pair`.
     ///
     /// To shut down the stream in the write direction, you can call the
@@ -32,6 +32,7 @@ cfg_net_unix! {
     /// the stream in one direction.
     ///
     /// [`shutdown()`]: fn@crate::io::AsyncWriteExt::shutdown
+    /// [`UnixListener::accept`]: crate::net::UnixListener::accept
     pub struct UnixStream {
         io: PollEvented<mio::net::UnixStream>,
     }
@@ -239,8 +240,12 @@ impl UnixStream {
     /// # Return
     ///
     /// If data is successfully read, `Ok(n)` is returned, where `n` is the
-    /// number of bytes read. `Ok(0)` indicates the stream's read half is closed
-    /// and will no longer yield data. If the stream is not ready to read data
+    /// number of bytes read. If `n` is `0`, then it can indicate one of two scenarios:
+    ///
+    /// 1. The stream's read half is closed and will no longer yield data.
+    /// 2. The specified buffer was 0 bytes in length.
+    ///
+    /// If the stream is not ready to read data,
     /// `Err(io::ErrorKind::WouldBlock)` is returned.
     ///
     /// # Examples

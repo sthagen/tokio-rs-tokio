@@ -85,6 +85,11 @@ pub struct Builder {
     /// How many ticks before yielding to the driver for timer and I/O events?
     pub(super) event_interval: u32,
 
+    /// When true, the multi-threade scheduler LIFO slot should not be used.
+    ///
+    /// This option should only be exposed as unstable.
+    pub(super) disable_lifo_slot: bool,
+
     #[cfg(tokio_unstable)]
     pub(super) unhandled_panic: UnhandledPanic,
 }
@@ -252,6 +257,8 @@ impl Builder {
 
             #[cfg(tokio_unstable)]
             unhandled_panic: UnhandledPanic::Ignore,
+
+            disable_lifo_slot: false,
         }
     }
 
@@ -618,7 +625,7 @@ impl Builder {
     /// ```
     pub fn build(&mut self) -> io::Result<Runtime> {
         match &self.kind {
-            Kind::CurrentThread => self.build_basic_runtime(),
+            Kind::CurrentThread => self.build_current_thread_runtime(),
             #[cfg(all(feature = "rt-multi-thread", not(tokio_wasi)))]
             Kind::MultiThread => self.build_threaded_runtime(),
         }
@@ -781,11 +788,51 @@ impl Builder {
             self.unhandled_panic = behavior;
             self
         }
+
+        /// Disables the LIFO task scheduler heuristic.
+        ///
+        /// The multi-threaded scheduler includes a heuristic for optimizing
+        /// message-passing patterns. This heuristic results in the **last**
+        /// scheduled task being polled first.
+        ///
+        /// To implement this heuristic, each worker thread has a slot which
+        /// holds the task that should be polled next. However, this slot cannot
+        /// be stolen by other worker threads, which can result in lower total
+        /// throughput when tasks tend to have longer poll times.
+        ///
+        /// This configuration option will disable this heuristic resulting in
+        /// all scheduled tasks being pushed into the worker-local queue, which
+        /// is stealable.
+        ///
+        /// Consider trying this option when the task "scheduled" time is high
+        /// but the runtime is underutilized. Use tokio-rs/tokio-metrics to
+        /// collect this data.
+        ///
+        /// # Unstable
+        ///
+        /// This configuration option is considered a workaround for the LIFO
+        /// slot not being stealable. When the slot becomes stealable, we will
+        /// revisit whther or not this option is necessary. See
+        /// tokio-rs/tokio#4941.
+        ///
+        /// # Examples
+        ///
+        /// ```
+        /// use tokio::runtime;
+        ///
+        /// let rt = runtime::Builder::new_multi_thread()
+        ///     .disable_lifo_slot()
+        ///     .build()
+        ///     .unwrap();
+        /// ```
+        pub fn disable_lifo_slot(&mut self) -> &mut Self {
+            self.disable_lifo_slot = true;
+            self
+        }
     }
 
-    fn build_basic_runtime(&mut self) -> io::Result<Runtime> {
-        use crate::runtime::basic_scheduler::Config;
-        use crate::runtime::{BasicScheduler, HandleInner, Kind};
+    fn build_current_thread_runtime(&mut self) -> io::Result<Runtime> {
+        use crate::runtime::{Config, CurrentThread, HandleInner, Kind};
 
         let (driver, resources) = driver::Driver::new(self.get_cfg())?;
 
@@ -805,7 +852,7 @@ impl Builder {
         // there are no futures ready to do something, it'll let the timer or
         // the reactor to generate some new stimuli for the futures to continue
         // in their life.
-        let scheduler = BasicScheduler::new(
+        let scheduler = CurrentThread::new(
             driver,
             handle_inner,
             Config {
@@ -815,9 +862,10 @@ impl Builder {
                 event_interval: self.event_interval,
                 #[cfg(tokio_unstable)]
                 unhandled_panic: self.unhandled_panic.clone(),
+                disable_lifo_slot: self.disable_lifo_slot,
             },
         );
-        let spawner = Spawner::Basic(scheduler.spawner().clone());
+        let spawner = Spawner::CurrentThread(scheduler.spawner().clone());
 
         Ok(Runtime {
             kind: Kind::CurrentThread(scheduler),
@@ -903,7 +951,7 @@ cfg_rt_multi_thread! {
     impl Builder {
         fn build_threaded_runtime(&mut self) -> io::Result<Runtime> {
             use crate::loom::sys::num_cpus;
-            use crate::runtime::{HandleInner, Kind, ThreadPool};
+            use crate::runtime::{Config, HandleInner, Kind, MultiThread};
 
             let core_threads = self.worker_threads.unwrap_or_else(num_cpus);
 
@@ -922,16 +970,21 @@ cfg_rt_multi_thread! {
                 blocking_spawner,
             };
 
-            let (scheduler, launch) = ThreadPool::new(
+            let (scheduler, launch) = MultiThread::new(
                 core_threads,
                 driver,
                 handle_inner,
-                self.before_park.clone(),
-                self.after_unpark.clone(),
-                self.global_queue_interval,
-                self.event_interval,
+                Config {
+                    before_park: self.before_park.clone(),
+                    after_unpark: self.after_unpark.clone(),
+                    global_queue_interval: self.global_queue_interval,
+                    event_interval: self.event_interval,
+                    #[cfg(tokio_unstable)]
+                    unhandled_panic: self.unhandled_panic.clone(),
+                    disable_lifo_slot: self.disable_lifo_slot,
+                },
             );
-            let spawner = Spawner::ThreadPool(scheduler.spawner().clone());
+            let spawner = Spawner::MultiThread(scheduler.spawner().clone());
 
             // Create the runtime handle
             let handle = Handle { spawner };
@@ -941,7 +994,7 @@ cfg_rt_multi_thread! {
             launch.launch();
 
             Ok(Runtime {
-                kind: Kind::ThreadPool(scheduler),
+                kind: Kind::MultiThread(scheduler),
                 handle,
                 blocking_pool,
             })

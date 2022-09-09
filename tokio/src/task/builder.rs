@@ -99,11 +99,7 @@ impl<'a> Builder<'a> {
     /// [runtime handle]: crate::runtime::Handle
     /// [`Handle::spawn`]: crate::runtime::Handle::spawn
     #[track_caller]
-    pub fn spawn_on<Fut>(
-        &mut self,
-        future: Fut,
-        handle: &Handle,
-    ) -> io::Result<JoinHandle<Fut::Output>>
+    pub fn spawn_on<Fut>(self, future: Fut, handle: &Handle) -> io::Result<JoinHandle<Fut::Output>>
     where
         Fut: Future + Send + 'static,
         Fut::Output: Send + 'static,
@@ -191,7 +187,7 @@ impl<'a> Builder<'a> {
         Output: Send + 'static,
     {
         use crate::runtime::Mandatory;
-        let (join_handle, spawn_result) = handle.as_inner().spawn_blocking_inner(
+        let (join_handle, spawn_result) = handle.as_inner().blocking_spawner.spawn_blocking_inner(
             function,
             Mandatory::NonMandatory,
             self.name,

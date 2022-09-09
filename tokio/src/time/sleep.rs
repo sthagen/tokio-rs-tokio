@@ -1,6 +1,6 @@
 #[cfg(all(tokio_unstable, feature = "tracing"))]
-use crate::time::driver::ClockTime;
-use crate::time::driver::{Handle, TimerEntry};
+use crate::runtime::time::TimeSource;
+use crate::runtime::time::{Handle, TimerEntry};
 use crate::time::{error::Error, Duration, Instant};
 use crate::util::trace;
 
@@ -239,7 +239,7 @@ cfg_trace! {
     struct Inner {
         deadline: Instant,
         ctx: trace::AsyncOpTracingCtx,
-        time_source: ClockTime,
+        time_source: TimeSource,
     }
 }
 
