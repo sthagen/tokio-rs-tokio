@@ -1,10 +1,4 @@
-use crate::runtime::task::JoinHandle;
-use crate::runtime::{blocking, context, driver, Spawner};
-use crate::util::error::{CONTEXT_MISSING_ERROR, THREAD_LOCAL_DESTROYED_ERROR};
-
-use std::future::Future;
-use std::marker::PhantomData;
-use std::{error, fmt};
+use crate::runtime::scheduler;
 
 /// Handle to the runtime.
 ///
@@ -13,51 +7,19 @@ use std::{error, fmt};
 ///
 /// [`Runtime::handle`]: crate::runtime::Runtime::handle()
 #[derive(Debug, Clone)]
+// When the `rt` feature is *not* enabled, this type is still defined, but not
+// included in the public API.
 pub struct Handle {
-    pub(super) spawner: Spawner,
+    pub(crate) inner: scheduler::Handle,
 }
 
-/// All internal handles that are *not* the scheduler's spawner.
-#[derive(Debug)]
-pub(crate) struct HandleInner {
-    /// Handles to the I/O drivers
-    #[cfg_attr(
-        not(any(
-            feature = "net",
-            all(unix, feature = "process"),
-            all(unix, feature = "signal"),
-        )),
-        allow(dead_code)
-    )]
-    pub(super) io_handle: driver::IoHandle,
+use crate::runtime::context;
+use crate::runtime::task::JoinHandle;
+use crate::util::error::{CONTEXT_MISSING_ERROR, THREAD_LOCAL_DESTROYED_ERROR};
 
-    /// Handles to the signal drivers
-    #[cfg_attr(
-        any(
-            loom,
-            not(all(unix, feature = "signal")),
-            not(all(unix, feature = "process")),
-        ),
-        allow(dead_code)
-    )]
-    pub(super) signal_handle: driver::SignalHandle,
-
-    /// Handles to the time drivers
-    #[cfg_attr(not(feature = "time"), allow(dead_code))]
-    pub(super) time_handle: driver::TimeHandle,
-
-    /// Source of `Instant::now()`
-    #[cfg_attr(not(all(feature = "time", feature = "test-util")), allow(dead_code))]
-    pub(super) clock: driver::Clock,
-
-    /// Blocking pool spawner
-    pub(crate) blocking_spawner: blocking::Spawner,
-}
-
-/// Create a new runtime handle.
-pub(crate) trait ToHandle {
-    fn to_handle(&self) -> Handle;
-}
+use std::future::Future;
+use std::marker::PhantomData;
+use std::{error, fmt};
 
 /// Runtime context guard.
 ///
@@ -207,11 +169,7 @@ impl Handle {
         F: FnOnce() -> R + Send + 'static,
         R: Send + 'static,
     {
-        self.as_inner().blocking_spawner.spawn_blocking(self, func)
-    }
-
-    pub(crate) fn as_inner(&self) -> &HandleInner {
-        self.spawner.as_handle_inner()
+        self.inner.blocking_spawner().spawn_blocking(self, func)
     }
 
     /// Runs a future to completion on this `Handle`'s associated `Runtime`.
@@ -311,17 +269,7 @@ impl Handle {
         let id = crate::runtime::task::Id::next();
         #[cfg(all(tokio_unstable, feature = "tracing"))]
         let future = crate::util::trace::task(future, "task", _name, id.as_u64());
-        self.spawner.spawn(future, id)
-    }
-
-    pub(crate) fn shutdown(mut self) {
-        self.spawner.shutdown();
-    }
-}
-
-impl ToHandle for Handle {
-    fn to_handle(&self) -> Handle {
-        self.clone()
+        self.inner.spawn(future, id)
     }
 }
 

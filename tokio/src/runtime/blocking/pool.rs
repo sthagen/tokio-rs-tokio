@@ -7,7 +7,8 @@ use crate::runtime::blocking::{shutdown, BlockingTask};
 use crate::runtime::builder::ThreadNameFn;
 use crate::runtime::context;
 use crate::runtime::task::{self, JoinHandle};
-use crate::runtime::{Builder, Callback, ToHandle};
+use crate::runtime::{Builder, Callback, Handle};
+use crate::util::{replace_thread_rng, RngSeedGenerator};
 
 use std::collections::{HashMap, VecDeque};
 use std::fmt;
@@ -48,6 +49,9 @@ struct Inner {
 
     // Customizable wait timeout.
     keep_alive: Duration,
+
+    // Random number seed
+    seed_generator: RngSeedGenerator,
 }
 
 struct Shared {
@@ -150,7 +154,7 @@ cfg_fs! {
         R: Send + 'static,
     {
         let rt = context::current();
-        rt.as_inner().blocking_spawner.spawn_mandatory_blocking(&rt, func)
+        rt.inner.blocking_spawner().spawn_mandatory_blocking(&rt, func)
     }
 }
 
@@ -182,6 +186,7 @@ impl BlockingPool {
                     before_stop: builder.before_stop.clone(),
                     thread_cap,
                     keep_alive,
+                    seed_generator: builder.seed_generator.next_generator(),
                 }),
             },
             shutdown_rx,
@@ -242,7 +247,7 @@ impl fmt::Debug for BlockingPool {
 
 impl Spawner {
     #[track_caller]
-    pub(crate) fn spawn_blocking<F, R>(&self, rt: &dyn ToHandle, func: F) -> JoinHandle<R>
+    pub(crate) fn spawn_blocking<F, R>(&self, rt: &Handle, func: F) -> JoinHandle<R>
     where
         F: FnOnce() -> R + Send + 'static,
         R: Send + 'static,
@@ -270,7 +275,7 @@ impl Spawner {
             all(loom, not(test)), // the function is covered by loom tests
             test
         ), allow(dead_code))]
-        pub(crate) fn spawn_mandatory_blocking<F, R>(&self, rt: &dyn ToHandle, func: F) -> Option<JoinHandle<R>>
+        pub(crate) fn spawn_mandatory_blocking<F, R>(&self, rt: &Handle, func: F) -> Option<JoinHandle<R>>
         where
             F: FnOnce() -> R + Send + 'static,
             R: Send + 'static,
@@ -305,7 +310,7 @@ impl Spawner {
         func: F,
         is_mandatory: Mandatory,
         name: Option<&str>,
-        rt: &dyn ToHandle,
+        rt: &Handle,
     ) -> (JoinHandle<R>, Result<(), SpawnError>)
     where
         F: FnOnce() -> R + Send + 'static,
@@ -337,7 +342,7 @@ impl Spawner {
         (handle, spawned)
     }
 
-    fn spawn_task(&self, task: Task, rt: &dyn ToHandle) -> Result<(), SpawnError> {
+    fn spawn_task(&self, task: Task, rt: &Handle) -> Result<(), SpawnError> {
         let mut shared = self.inner.shared.lock();
 
         if shared.shutdown {
@@ -400,7 +405,7 @@ impl Spawner {
     fn spawn_thread(
         &self,
         shutdown_tx: shutdown::Sender,
-        rt: &dyn ToHandle,
+        rt: &Handle,
         id: usize,
     ) -> std::io::Result<thread::JoinHandle<()>> {
         let mut builder = thread::Builder::new().name((self.inner.thread_name)());
@@ -409,12 +414,12 @@ impl Spawner {
             builder = builder.stack_size(stack_size);
         }
 
-        let rt = rt.to_handle();
+        let rt = rt.clone();
 
         builder.spawn(move || {
             // Only the reference should be moved into the closure
             let _enter = crate::runtime::context::enter(rt.clone());
-            rt.as_inner().blocking_spawner.inner.run(id);
+            rt.inner.blocking_spawner().inner.run(id);
             drop(shutdown_tx);
         })
     }
@@ -431,6 +436,8 @@ impl Inner {
         if let Some(f) = &self.after_start {
             f()
         }
+        // We own this thread so there is no need to replace the RngSeed once we're done.
+        let _ = replace_thread_rng(self.seed_generator.next_seed());
 
         let mut shared = self.shared.lock();
         let mut join_on_thread = None;
