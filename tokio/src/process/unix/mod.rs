@@ -37,7 +37,6 @@ use crate::signal::unix::{signal, Signal, SignalKind};
 
 use mio::event::Source;
 use mio::unix::SourceFd;
-use once_cell::sync::Lazy;
 use std::fmt;
 use std::fs::File;
 use std::future::Future;
@@ -64,25 +63,41 @@ impl Kill for StdChild {
     }
 }
 
-static ORPHAN_QUEUE: Lazy<OrphanQueueImpl<StdChild>> = Lazy::new(OrphanQueueImpl::new);
+cfg_not_has_const_mutex_new! {
+    fn get_orphan_queue() -> &'static OrphanQueueImpl<StdChild> {
+        use crate::util::once_cell::OnceCell;
+
+        static ORPHAN_QUEUE: OnceCell<OrphanQueueImpl<StdChild>> = OnceCell::new();
+
+        ORPHAN_QUEUE.get(OrphanQueueImpl::new)
+    }
+}
+
+cfg_has_const_mutex_new! {
+    fn get_orphan_queue() -> &'static OrphanQueueImpl<StdChild> {
+        static ORPHAN_QUEUE: OrphanQueueImpl<StdChild> = OrphanQueueImpl::new();
+
+        &ORPHAN_QUEUE
+    }
+}
 
 pub(crate) struct GlobalOrphanQueue;
 
 impl fmt::Debug for GlobalOrphanQueue {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        ORPHAN_QUEUE.fmt(fmt)
+        get_orphan_queue().fmt(fmt)
     }
 }
 
 impl GlobalOrphanQueue {
     fn reap_orphans(handle: &SignalHandle) {
-        ORPHAN_QUEUE.reap_orphans(handle)
+        get_orphan_queue().reap_orphans(handle)
     }
 }
 
 impl OrphanQueue<StdChild> for GlobalOrphanQueue {
     fn push_orphan(&self, orphan: StdChild) {
-        ORPHAN_QUEUE.push_orphan(orphan)
+        get_orphan_queue().push_orphan(orphan)
     }
 }
 
