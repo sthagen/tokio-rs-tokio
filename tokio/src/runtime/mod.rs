@@ -184,8 +184,16 @@ cfg_io_driver_impl! {
     pub(crate) mod io;
 }
 
+cfg_process_driver! {
+    mod process;
+}
+
 cfg_time! {
     pub(crate) mod time;
+}
+
+cfg_signal_internal_and_unix! {
+    pub(crate) mod signal;
 }
 
 cfg_rt! {
@@ -217,8 +225,6 @@ cfg_rt! {
         pub use self::builder::UnhandledPanic;
         pub use crate::util::RngSeed;
     }
-
-    pub(crate) mod context;
 
     use self::enter::enter;
 
@@ -381,6 +387,10 @@ cfg_rt! {
         /// This spawns the given future onto the runtime's executor, usually a
         /// thread pool. The thread pool is then responsible for polling the future
         /// until it completes.
+        ///
+        /// You do not have to `.await` the returned `JoinHandle` to make the
+        /// provided future start execution. It will start running in the
+        /// background immediately when `spawn` is called.
         ///
         /// See [module level][mod] documentation for more details.
         ///
@@ -610,7 +620,7 @@ cfg_rt! {
                 Scheduler::CurrentThread(current_thread) => {
                     // This ensures that tasks spawned on the current-thread
                     // runtime are dropped inside the runtime's context.
-                    match self::context::try_enter(self.handle.clone()) {
+                    match self.handle.inner.try_enter() {
                         Some(guard) => current_thread.set_context_guard(guard),
                         None => {
                             // The context thread-local has already been destroyed.

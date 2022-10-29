@@ -13,7 +13,6 @@ pub struct Handle {
     pub(crate) inner: scheduler::Handle,
 }
 
-use crate::runtime::context;
 use crate::runtime::task::JoinHandle;
 use crate::util::error::{CONTEXT_MISSING_ERROR, THREAD_LOCAL_DESTROYED_ERROR};
 
@@ -30,7 +29,7 @@ use std::{error, fmt};
 #[derive(Debug)]
 #[must_use = "Creating and dropping a guard does nothing"]
 pub struct EnterGuard<'a> {
-    _guard: context::EnterGuard,
+    _guard: scheduler::EnterGuard,
     _handle_lifetime: PhantomData<&'a Handle>,
 }
 
@@ -45,7 +44,7 @@ impl Handle {
     /// [`tokio::spawn`]: fn@crate::spawn
     pub fn enter(&self) -> EnterGuard<'_> {
         EnterGuard {
-            _guard: context::enter(self.clone()),
+            _guard: self.inner.enter(),
             _handle_lifetime: PhantomData,
         }
     }
@@ -96,7 +95,9 @@ impl Handle {
     /// ```
     #[track_caller]
     pub fn current() -> Self {
-        context::current()
+        Handle {
+            inner: scheduler::Handle::current(),
+        }
     }
 
     /// Returns a Handle view over the currently running Runtime
@@ -105,7 +106,7 @@ impl Handle {
     ///
     /// Contrary to `current`, this never panics
     pub fn try_current() -> Result<Self, TryCurrentError> {
-        context::try_current()
+        scheduler::Handle::try_current().map(|inner| Handle { inner })
     }
 
     /// Spawns a future onto the Tokio runtime.
@@ -113,6 +114,10 @@ impl Handle {
     /// This spawns the given future onto the runtime's executor, usually a
     /// thread pool. The thread pool is then responsible for polling the future
     /// until it completes.
+    ///
+    /// You do not have to `.await` the returned `JoinHandle` to make the
+    /// provided future start execution. It will start running in the background
+    /// immediately when `spawn` is called.
     ///
     /// See [module level][mod] documentation for more details.
     ///
