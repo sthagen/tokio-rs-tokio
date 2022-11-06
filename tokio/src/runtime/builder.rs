@@ -1,6 +1,6 @@
 use crate::runtime::handle::Handle;
 use crate::runtime::{blocking, driver, Callback, Runtime};
-use crate::util::{RngSeed, RngSeedGenerator};
+use crate::util::rand::{RngSeed, RngSeedGenerator};
 
 use std::fmt;
 use std::io;
@@ -872,7 +872,7 @@ impl Builder {
 
     fn build_current_thread_runtime(&mut self) -> io::Result<Runtime> {
         use crate::runtime::scheduler::{self, CurrentThread};
-        use crate::runtime::{Config, Scheduler};
+        use crate::runtime::{runtime::Scheduler, Config};
 
         let (driver, driver_handle) = driver::Driver::new(self.get_cfg())?;
 
@@ -888,7 +888,7 @@ impl Builder {
         // there are no futures ready to do something, it'll let the timer or
         // the reactor to generate some new stimuli for the futures to continue
         // in their life.
-        let scheduler = CurrentThread::new(
+        let (scheduler, handle) = CurrentThread::new(
             driver,
             driver_handle,
             blocking_spawner,
@@ -905,13 +905,15 @@ impl Builder {
             },
         );
 
-        let handle = scheduler::Handle::CurrentThread(scheduler.handle().clone());
+        let handle = Handle {
+            inner: scheduler::Handle::CurrentThread(handle),
+        };
 
-        Ok(Runtime {
-            scheduler: Scheduler::CurrentThread(scheduler),
-            handle: Handle { inner: handle },
+        Ok(Runtime::from_parts(
+            Scheduler::CurrentThread(scheduler),
+            handle,
             blocking_pool,
-        })
+        ))
     }
 }
 
@@ -991,7 +993,7 @@ cfg_rt_multi_thread! {
     impl Builder {
         fn build_threaded_runtime(&mut self) -> io::Result<Runtime> {
             use crate::loom::sys::num_cpus;
-            use crate::runtime::{Config, Scheduler};
+            use crate::runtime::{Config, runtime::Scheduler};
             use crate::runtime::scheduler::{self, MultiThread};
 
             let core_threads = self.worker_threads.unwrap_or_else(num_cpus);
@@ -1007,7 +1009,7 @@ cfg_rt_multi_thread! {
             let seed_generator_1 = self.seed_generator.next_generator();
             let seed_generator_2 = self.seed_generator.next_generator();
 
-            let (scheduler, launch) = MultiThread::new(
+            let (scheduler, handle, launch) = MultiThread::new(
                 core_threads,
                 driver,
                 driver_handle,
@@ -1025,18 +1027,13 @@ cfg_rt_multi_thread! {
                 },
             );
 
-            let handle = scheduler::Handle::MultiThread(scheduler.handle().clone());
-            let handle = Handle { inner: handle };
+            let handle = Handle { inner: scheduler::Handle::MultiThread(handle) };
 
             // Spawn the thread pool workers
             let _enter = handle.enter();
             launch.launch();
 
-            Ok(Runtime {
-                scheduler: Scheduler::MultiThread(scheduler),
-                handle,
-                blocking_pool,
-            })
+            Ok(Runtime::from_parts(Scheduler::MultiThread(scheduler), handle, blocking_pool))
         }
     }
 }
