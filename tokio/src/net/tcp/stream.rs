@@ -1378,16 +1378,30 @@ mod sys {
             self.io.as_raw_fd()
         }
     }
+
+    #[cfg(not(tokio_no_as_fd))]
+    impl AsFd for TcpStream {
+        fn as_fd(&self) -> BorrowedFd<'_> {
+            unsafe { BorrowedFd::borrow_raw(self.as_raw_fd()) }
+        }
+    }
 }
 
-#[cfg(windows)]
-mod sys {
-    use super::TcpStream;
-    use std::os::windows::prelude::*;
+cfg_windows! {
+    use crate::os::windows::io::{AsRawSocket, RawSocket};
+    #[cfg(not(tokio_no_as_fd))]
+    use crate::os::windows::io::{AsSocket, BorrowedSocket};
 
     impl AsRawSocket for TcpStream {
         fn as_raw_socket(&self) -> RawSocket {
             self.io.as_raw_socket()
+        }
+    }
+
+    #[cfg(not(tokio_no_as_fd))]
+    impl AsSocket for TcpStream {
+        fn as_socket(&self) -> BorrowedSocket<'_> {
+            unsafe { BorrowedSocket::borrow_raw(self.as_raw_socket()) }
         }
     }
 }
@@ -1400,6 +1414,13 @@ mod sys {
     impl AsRawFd for TcpStream {
         fn as_raw_fd(&self) -> RawFd {
             self.io.as_raw_fd()
+        }
+    }
+
+    #[cfg(not(tokio_no_as_fd))]
+    impl AsFd for TcpStream {
+        fn as_fd(&self) -> BorrowedFd<'_> {
+            unsafe { BorrowedFd::borrow_raw(self.as_raw_fd()) }
         }
     }
 }
