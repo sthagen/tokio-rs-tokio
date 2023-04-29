@@ -6,7 +6,7 @@ name = "tokio"
 #   - README.md
 # - Update CHANGELOG.md.
 # - Create "v1.x.y" git tag.
-version = "1.27.0"
+version = "1.28.0"
 edition = "2021"
 rust-version = "1.56"
 authors = ["Tokio Contributors <team@tokio.rs>"]
@@ -97,7 +97,7 @@ stats = []
 autocfg = "1.1"
 
 [dependencies]
-tokio-macros = { version = "~2.0.0", path = "../tokio-macros", optional = true }
+tokio-macros = { version = "~2.1.0", path = "../tokio-macros", optional = true }
 
 pin-project-lite = "0.2.0"
 
@@ -114,6 +114,11 @@ socket2 = { version = "0.4.9", optional = true, features = [ "all" ] }
 # Requires `--cfg tokio_unstable` to enable.
 [target.'cfg(tokio_unstable)'.dependencies]
 tracing = { version = "0.1.25", default-features = false, features = ["std"], optional = true } # Not in full
+
+# Currently unstable. The API exposed by these features may be broken at any time.
+# Requires `--cfg tokio_unstable` to enable.
+[target.'cfg(tokio_taskdump)'.dependencies]
+backtrace = { version = "0.3.58" }
 
 [target.'cfg(unix)'.dependencies]
 libc = { version = "0.2.42", optional = true }
