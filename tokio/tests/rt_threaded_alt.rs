@@ -1,5 +1,6 @@
 #![warn(rust_2018_idioms)]
 #![cfg(all(feature = "full", not(tokio_wasi)))]
+#![cfg(tokio_unstable)]
 
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
@@ -27,7 +28,7 @@ macro_rules! cfg_metrics {
 #[test]
 fn single_thread() {
     // No panic when starting a runtime w/ a single thread
-    let _ = runtime::Builder::new_multi_thread()
+    let _ = runtime::Builder::new_multi_thread_alt()
         .enable_all()
         .worker_threads(1)
         .build()
@@ -171,7 +172,7 @@ fn lifo_slot_budget() {
         tokio::spawn(my_fn());
     }
 
-    let rt = runtime::Builder::new_multi_thread()
+    let rt = runtime::Builder::new_multi_thread_alt()
         .enable_all()
         .worker_threads(1)
         .build()
@@ -256,7 +257,7 @@ fn drop_threadpool_drops_futures() {
         let a = num_inc.clone();
         let b = num_dec.clone();
 
-        let rt = runtime::Builder::new_multi_thread()
+        let rt = runtime::Builder::new_multi_thread_alt()
             .enable_all()
             .on_thread_start(move || {
                 a.fetch_add(1, Relaxed);
@@ -295,7 +296,7 @@ fn start_stop_callbacks_called() {
 
     let after_inner = after_start.clone();
     let before_inner = before_stop.clone();
-    let rt = tokio::runtime::Builder::new_multi_thread()
+    let rt = tokio::runtime::Builder::new_multi_thread_alt()
         .enable_all()
         .on_thread_start(move || {
             after_inner.clone().fetch_add(1, Ordering::Relaxed);
@@ -395,7 +396,7 @@ fn multi_threadpool() {
 // channel yields occasionally even if there are values ready to receive.
 #[test]
 fn coop_and_block_in_place() {
-    let rt = tokio::runtime::Builder::new_multi_thread()
+    let rt = tokio::runtime::Builder::new_multi_thread_alt()
         // Setting max threads to 1 prevents another thread from claiming the
         // runtime worker yielded as part of `block_in_place` and guarantees the
         // same thread will reclaim the worker at the end of the
@@ -444,7 +445,7 @@ fn coop_and_block_in_place() {
 
 #[test]
 fn yield_after_block_in_place() {
-    let rt = tokio::runtime::Builder::new_multi_thread()
+    let rt = tokio::runtime::Builder::new_multi_thread_alt()
         .worker_threads(1)
         .build()
         .unwrap();
@@ -471,7 +472,7 @@ fn yield_after_block_in_place() {
 // Testing this does not panic
 #[test]
 fn max_blocking_threads() {
-    let _rt = tokio::runtime::Builder::new_multi_thread()
+    let _rt = tokio::runtime::Builder::new_multi_thread_alt()
         .max_blocking_threads(1)
         .build()
         .unwrap();
@@ -480,7 +481,7 @@ fn max_blocking_threads() {
 #[test]
 #[should_panic]
 fn max_blocking_threads_set_to_zero() {
-    let _rt = tokio::runtime::Builder::new_multi_thread()
+    let _rt = tokio::runtime::Builder::new_multi_thread_alt()
         .max_blocking_threads(0)
         .build()
         .unwrap();
@@ -550,7 +551,7 @@ fn wake_during_shutdown() {
         }
     }
 
-    let rt = tokio::runtime::Builder::new_multi_thread()
+    let rt = tokio::runtime::Builder::new_multi_thread_alt()
         .worker_threads(1)
         .enable_all()
         .build()
@@ -588,34 +589,6 @@ async fn test_block_in_place4() {
     tokio::task::block_in_place(|| {});
 }
 
-// Repro for tokio-rs/tokio#5239
-#[test]
-fn test_nested_block_in_place_with_block_on_between() {
-    let rt = runtime::Builder::new_multi_thread()
-        .worker_threads(1)
-        // Needs to be more than 0
-        .max_blocking_threads(1)
-        .build()
-        .unwrap();
-
-    // Triggered by a race condition, so run a few times to make sure it is OK.
-    for _ in 0..100 {
-        let h = rt.handle().clone();
-
-        rt.block_on(async move {
-            tokio::spawn(async move {
-                tokio::task::block_in_place(|| {
-                    h.block_on(async {
-                        tokio::task::block_in_place(|| {});
-                    });
-                })
-            })
-            .await
-            .unwrap()
-        });
-    }
-}
-
 // Testing the tuning logic is tricky as it is inherently timing based, and more
 // of a heuristic than an exact behavior. This test checks that the interval
 // changes over time based on load factors. There are no assertions, completion
@@ -627,7 +600,7 @@ fn test_tuning() {
     use std::sync::atomic::AtomicBool;
     use std::time::Duration;
 
-    let rt = runtime::Builder::new_multi_thread()
+    let rt = runtime::Builder::new_multi_thread_alt()
         .worker_threads(1)
         .build()
         .unwrap();
@@ -737,47 +710,8 @@ fn test_tuning() {
 }
 
 fn rt() -> runtime::Runtime {
-    runtime::Runtime::new().unwrap()
-}
-
-#[cfg(tokio_unstable)]
-mod unstable {
-    use super::*;
-
-    #[test]
-    fn test_disable_lifo_slot() {
-        let rt = runtime::Builder::new_multi_thread()
-            .disable_lifo_slot()
-            .worker_threads(2)
-            .build()
-            .unwrap();
-
-        rt.block_on(async {
-            tokio::spawn(async {
-                // Spawn another task and block the thread until completion. If the LIFO slot
-                // is used then the test doesn't complete.
-                futures::executor::block_on(tokio::spawn(async {})).unwrap();
-            })
-            .await
-            .unwrap();
-        })
-    }
-
-    #[test]
-    fn runtime_id_is_same() {
-        let rt = rt();
-
-        let handle1 = rt.handle();
-        let handle2 = rt.handle();
-
-        assert_eq!(handle1.id(), handle2.id());
-    }
-
-    #[test]
-    fn runtime_ids_different() {
-        let rt1 = rt();
-        let rt2 = rt();
-
-        assert_ne!(rt1.handle().id(), rt2.handle().id());
-    }
+    runtime::Builder::new_multi_thread_alt()
+        .enable_all()
+        .build()
+        .unwrap()
 }

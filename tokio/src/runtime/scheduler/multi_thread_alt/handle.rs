@@ -1,6 +1,6 @@
 use crate::future::Future;
 use crate::loom::sync::Arc;
-use crate::runtime::scheduler::multi_thread::worker;
+use crate::runtime::scheduler::multi_thread_alt::worker;
 use crate::runtime::{
     blocking, driver,
     task::{self, JoinHandle},
@@ -11,10 +11,6 @@ use std::fmt;
 
 cfg_metrics! {
     mod metrics;
-}
-
-cfg_taskdump! {
-    mod taskdump;
 }
 
 /// Handle to the multi thread scheduler
@@ -43,7 +39,8 @@ impl Handle {
     }
 
     pub(crate) fn shutdown(&self) {
-        self.close();
+        self.shared.close();
+        self.driver.unpark();
     }
 
     pub(super) fn bind_new_task<T>(me: &Arc<Self>, future: T, id: task::Id) -> JoinHandle<T::Output>
@@ -53,7 +50,9 @@ impl Handle {
     {
         let (handle, notified) = me.shared.owned.bind(future, me.clone(), id);
 
-        me.schedule_option_task_without_yield(notified);
+        if let Some(notified) = notified {
+            me.shared.schedule_task(notified, false);
+        }
 
         handle
     }
