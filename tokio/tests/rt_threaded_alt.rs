@@ -1,5 +1,5 @@
 #![warn(rust_2018_idioms)]
-#![cfg(all(feature = "full", not(tokio_wasi)))]
+#![cfg(all(feature = "full", not(target_os = "wasi")))]
 #![cfg(tokio_unstable)]
 
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -322,7 +322,7 @@ fn start_stop_callbacks_called() {
 }
 
 #[test]
-fn blocking() {
+fn blocking_task() {
     // used for notifying the main thread
     const NUM: usize = 1_000;
 
