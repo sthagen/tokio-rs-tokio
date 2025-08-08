@@ -359,6 +359,17 @@ jobs:
         include:
           - os: ubuntu-latest
     steps:
+      - name: check if io-uring is supported in the CI environment
+        run: |
+          # Try to read the io-uring setting in the kernel config file.
+          # https://github.com/torvalds/linux/blob/75f5f23f8787c5e184fcb2fbcd02d8e9317dc5e7/init/Kconfig#L1782-L1789
+          CONFIG_FILE="/boot/config-$(uname -r)"
+          echo "Checking $CONFIG_FILE for io-uring support"
+          if ! grep -q "CONFIG_IO_URING=y" "$CONFIG_FILE"; then
+            echo "Error: io_uring is not supported"
+            exit 1
+          fi
+
       - uses: actions/checkout@v4
       - name: Install Rust ${{ env.rust_stable }}
         uses: dtolnay/rust-toolchain@stable
@@ -1044,10 +1055,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust ${{ env.rust_stable }}
+      - name: Install Rust 1.88.0
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: ${{ env.rust_stable }}
+          toolchain: 1.88.0
       - name: Install wasm-pack
         uses: taiki-e/install-action@wasm-pack
 
@@ -1067,10 +1078,10 @@ jobs:
           - wasm32-wasip1-threads
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust ${{ env.rust_stable }}
+      - name: Install Rust 1.88.0
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: ${{ env.rust_stable }}
+          toolchain: 1.88.0
           targets: ${{ matrix.target }}
 
       # Install dependencies
