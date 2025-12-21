@@ -1,9 +1,3 @@
-
-
-*[The TokioConf 2026 Call For Talk Proposals is now open](https://tokio.rs/blog/2025-09-26-announcing-tokio-conf-cfp)*
-
----
-
 # Tokio
 
 A runtime for writing reliable, asynchronous, and slim applications with
@@ -131,7 +125,7 @@ question. You can also ask your question on [the discussions page][discussions].
 you! We have a [contributing guide][guide] to help you get involved in the Tokio
 project.
 
-[guide]: https://github.com/tokio-rs/tokio/blob/master/CONTRIBUTING.md
+[guide]: https://github.com/tokio-rs/tokio/blob/master/docs/contributing/README.md
 
 ## Related Projects
 
