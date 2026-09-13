@@ -1,5 +1,13 @@
 #![warn(rust_2018_idioms)]
-#![cfg(feature = "full")]
+#![cfg(any(
+    feature = "full",
+    all(
+        target_os = "emscripten",
+        feature = "rt",
+        feature = "macros",
+        feature = "io-util"
+    )
+))]
 
 use std::io::ErrorKind;
 use tokio::io::{AsyncBufReadExt, BufReader, Error};
@@ -21,6 +29,20 @@ async fn read_until() {
     let n = assert_ok!(rd.read_until(b' ', &mut buf).await);
     assert_eq!(n, 0);
     assert_eq!(buf, []);
+}
+
+#[tokio::test]
+async fn read_until_retries_interrupted() {
+    let mock = Builder::new()
+        .read_error(Error::from(ErrorKind::Interrupted))
+        .read(b"hello world")
+        .build();
+    let mut read = BufReader::new(mock);
+    let mut buf = vec![];
+
+    let n = read.read_until(b' ', &mut buf).await.unwrap();
+    assert_eq!(n, 6);
+    assert_eq!(buf, b"hello ");
 }
 
 #[tokio::test]
